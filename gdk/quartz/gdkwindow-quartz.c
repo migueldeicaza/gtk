@@ -1394,7 +1394,8 @@ move_resize_window_internal (GdkWindow *window,
   if ((x == -1 || (x == private->x)) &&
       (y == -1 || (y == private->y)) &&
       (width == -1 || (width == private->width)) &&
-      (height == -1 || (height == private->height)))
+      (height == -1 || (height == private->height)) &&
+      impl->toplevel)
     {
       return;
     }
@@ -1459,8 +1460,11 @@ move_resize_window_internal (GdkWindow *window,
       if (!private->input_only)
         {
           NSRect nsrect;
+          GdkWindow *toplevel = gdk_window_get_effective_toplevel (window);
+          gint x, y;
 
-          nsrect = NSMakeRect (private->x, private->y, private->width, private->height);
+          get_ancestor_coordinates_from_child (window, 0, 0, toplevel, &x, &y);
+          nsrect = NSMakeRect (x, y, private->width, private->height);
 
           /* The newly visible area of this window in a coordinate
            * system rooted at the origin of this window.
