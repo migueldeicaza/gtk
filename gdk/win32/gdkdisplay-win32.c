@@ -178,6 +178,20 @@ _gdk_monitor_init (void)
 #endif
 }
 
+static void
+_gdk_screen_init_resolution (GdkScreen *screen)
+{
+  HDC hDC;
+
+  hDC = GetDC (NULL);
+
+  if (hDC)
+    {
+      gdk_screen_set_resolution (screen, GetDeviceCaps (hDC, LOGPIXELSY));
+      ReleaseDC (NULL, hDC);
+    }
+}
+
 GdkDisplay *
 gdk_display_open (const gchar *display_name)
 {
@@ -206,6 +220,7 @@ gdk_display_open (const gchar *display_name)
   _gdk_visual_init ();
   gdk_screen_set_default_colormap (_gdk_screen,
                                    gdk_screen_get_system_colormap (_gdk_screen));
+  _gdk_screen_init_resolution (_gdk_screen);
   _gdk_windowing_window_init (_gdk_screen);
   _gdk_windowing_image_init ();
   _gdk_events_init ();
