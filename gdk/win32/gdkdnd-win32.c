@@ -2225,6 +2225,8 @@ gdk_drag_abort (GdkDragContext *context,
 
   GDK_NOTE (DND, g_print ("gdk_drag_abort\n"));
 
+  gdk_drag_do_leave (context, time);
+
   if (use_ole2_dnd)
     _dnd_source_state = GDK_WIN32_DND_NONE;
 }
