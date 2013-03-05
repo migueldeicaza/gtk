@@ -2041,7 +2041,10 @@ ensure_stacking_on_activate_app (MSG       *msg,
 	      if (GDK_WINDOW_IS_MAPPED (rover_gdkw) &&
 		  (rover_impl->type_hint == GDK_WINDOW_TYPE_HINT_UTILITY ||
 		   rover_impl->type_hint == GDK_WINDOW_TYPE_HINT_DIALOG ||
-		   rover_impl->transient_owner != NULL))
+		   rover_impl->transient_owner != NULL) &&
+		  /* Do not restack below a TEMP window, or it will move the
+		   * window to the TOPMOST group */
+		  GDK_WINDOW_TYPE (rover_gdkw) != GDK_WINDOW_TEMP)
 		{
 		  GDK_NOTE (EVENTS, g_print (" restacking: %p", rover));
 		  SetWindowPos (msg->hwnd, rover, 0, 0, 0, 0,
