@@ -189,7 +189,8 @@ dist_imconffile_DATA = im-multipress.conf
 if CROSS_COMPILING
 RUN_QUERY_IMMODULES_TEST=false
 else
-RUN_QUERY_IMMODULES_TEST=test -z "$(DESTDIR)"
+#RUN_QUERY_IMMODULES_TEST=test -z "$(DESTDIR)"
+RUN_QUERY_IMMODULES_TEST=false
 endif
 
 # Running this if cross compiling or if DESTDIR is set is going to

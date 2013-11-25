@@ -4097,6 +4097,12 @@ _gdk_windowing_after_process_all_updates (void)
 {
 }
 
+static gdouble
+_gdk_win32_window_get_scale_factor (GdkWindow *window)
+{
+  return 1;
+}
+
 static void
 gdk_window_impl_iface_init (GdkWindowImplIface *iface)
 {
@@ -4129,6 +4135,7 @@ gdk_window_impl_iface_init (GdkWindowImplIface *iface)
   iface->input_window_crossing = _gdk_input_crossing_event;
   /* CHECK: we may not need set_pixmap anymore if setting FALSE */
   iface->supports_native_bg = TRUE;
+  iface->get_scale_factor = _gdk_win32_window_get_scale_factor;
 }
 
 gboolean
