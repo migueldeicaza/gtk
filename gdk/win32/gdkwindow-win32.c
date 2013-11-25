@@ -4126,7 +4126,6 @@ gdk_win32_window_get_scale_factor (GdkWindow *window)
   return 1.0;
 }
 
-
 static void
 gdk_window_impl_iface_init (GdkWindowImplIface *iface)
 {

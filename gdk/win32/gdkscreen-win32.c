@@ -119,6 +119,14 @@ gdk_screen_get_monitor_plug_name (GdkScreen *screen,
 }
 
 void
+gdk_screen_get_monitor_workarea (GdkScreen    *screen, 
+				 gint          num_monitor,
+				 GdkRectangle *dest)
+{
+  return gdk_screen_get_monitor_geometry (screen, num_monitor, dest);
+}
+
+void
 gdk_screen_get_monitor_geometry (GdkScreen    *screen, 
 				 gint          num_monitor,
 				 GdkRectangle *dest)
