@@ -1753,6 +1753,13 @@ gdk_window_quartz_lower (GdkWindow *window)
 }
 
 static void
+gdk_window_quartz_restack_under (GdkWindow *window,
+                                 GList *native_siblings)
+{
+  /* Implement me ! */
+}
+
+static void
 gdk_window_quartz_restack_toplevel (GdkWindow *window,
 				    GdkWindow *sibling,
 				    gboolean   above)
@@ -3296,6 +3303,7 @@ gdk_window_impl_iface_init (GdkWindowImplIface *iface)
   iface->raise = gdk_window_quartz_raise;
   iface->lower = gdk_window_quartz_lower;
   iface->restack_toplevel = gdk_window_quartz_restack_toplevel;
+  iface->restack_under= gdk_window_quartz_restack_under;
   iface->move_resize = gdk_window_quartz_move_resize;
   iface->set_background = gdk_window_quartz_set_background;
   iface->set_back_pixmap = gdk_window_quartz_set_back_pixmap;
