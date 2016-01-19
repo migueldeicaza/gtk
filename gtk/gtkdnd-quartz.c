@@ -1086,6 +1086,7 @@ gtk_drag_begin_idle (gpointer arg)
   types = _gtk_quartz_target_list_to_pasteboard_types (info->target_list);
 
   [pasteboard declareTypes:[types allObjects] owner:owner];
+  [owner pasteboard:pasteboard provideDataForType:NSURLPboardType];
 
   [owner release];
   [types release];
@@ -1914,7 +1915,7 @@ gtk_drag_source_info_destroy (GtkDragSourceInfo *info)
    * info->context after it has been destroyed.
    */
   pasteboard = [NSPasteboard pasteboardWithName: NSDragPboard];
-  [pasteboard declareTypes: nil owner: nil];
+  [pasteboard clearContents];
 
   [pool release];
 
