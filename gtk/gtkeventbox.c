@@ -451,6 +451,7 @@ static void
 gtk_event_box_map (GtkWidget *widget)
 {
   GtkEventBoxPrivate *priv;
+  GtkBin *bin = GTK_BIN (widget);
 
   priv = GTK_EVENT_BOX_GET_PRIVATE (widget);
 
@@ -458,15 +459,21 @@ gtk_event_box_map (GtkWidget *widget)
     gdk_window_show (priv->event_window);
 
   GTK_WIDGET_CLASS (gtk_event_box_parent_class)->map (widget);
+  /* forward the map event to the children */
+  if (bin->child) {
+    gtk_widget_map (bin->child);
+  }
 
   if (priv->event_window != NULL && priv->above_child)
     gdk_window_show (priv->event_window);
+
 }
 
 static void
 gtk_event_box_unmap (GtkWidget *widget)
 {
   GtkEventBoxPrivate *priv;
+  GtkBin *bin = GTK_BIN (widget);
 
   priv = GTK_EVENT_BOX_GET_PRIVATE (widget);
 
@@ -474,6 +481,11 @@ gtk_event_box_unmap (GtkWidget *widget)
     gdk_window_hide (priv->event_window);
 
   GTK_WIDGET_CLASS (gtk_event_box_parent_class)->unmap (widget);
+
+  /* forward the unmap event to the children */
+  if (bin->child) {
+    gtk_widget_unmap (bin->child);
+  }
 }
 
 
