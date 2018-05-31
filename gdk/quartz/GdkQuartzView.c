@@ -738,4 +738,37 @@
     [self updateTrackingRect];
 }
 
+/* Handle OS X gesture events. The Apple documentation is explicit
+ * that these events should not be captured through a tracking loop (which
+ * is how we handle usual event handling), so we fallback to overriding
+ * NSResponder methods.
+ */
+
+-(void)magnifyWithEvent:(NSEvent *)event
+{
+  GdkEvent *gdk_event;
+
+  gdk_event = _gdk_quartz_events_create_magnify_event (event);
+  if (gdk_event)
+    _gdk_event_queue_append (gdk_display_get_default (), gdk_event);
+}
+
+-(void)rotateWithEvent:(NSEvent *)event
+{
+  GdkEvent *gdk_event;
+
+  gdk_event = _gdk_quartz_events_create_rotate_event (event);
+  if (gdk_event)
+    _gdk_event_queue_append (gdk_display_get_default (), gdk_event);
+}
+
+-(void)swipeWithEvent:(NSEvent *)event
+{
+  GdkEvent *gdk_event;
+
+  gdk_event = _gdk_quartz_events_create_swipe_event (event);
+  if (gdk_event)
+    _gdk_event_queue_append (gdk_display_get_default (), gdk_event);
+}
+
 @end

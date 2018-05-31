@@ -90,7 +90,8 @@ noinst_PROGRAMS =  $(TEST_PROGS)	\
 	testactions			\
 	testgrouping			\
 	testtooltips			\
-	testvolumebutton
+	testvolumebutton		\
+	testgestures
 
 if HAVE_CXX
 noinst_PROGRAMS += autotestkeywords
@@ -168,6 +169,7 @@ testgrouping_DEPENDENCIES = $(TEST_DEPS)
 testtooltips_DEPENDENCIES = $(TEST_DEPS)
 testvolumebutton_DEPENDENCIES = $(TEST_DEPS)
 testwindows_DEPENDENCIES = $(TEST_DEPS)
+testgestures_DEPENDENCIES = $(TEST_DEPS)
 
 testnsview_LDFLAGS = -framework WebKit
 
@@ -280,6 +282,9 @@ testoffscreenwindow_SOURCES =	\
 
 testwindows_SOURCES = 	\
 	testwindows.c
+
+testgestures_SOURCES = 	\
+	testgestures.c
 
 EXTRA_DIST += 			\
 	prop-editor.h		\

@@ -197,6 +197,9 @@ enum {
   KEYNAV_FAILED,
   DRAG_FAILED,
   DAMAGE_EVENT,
+  GESTURE_MAGNIFY_EVENT,
+  GESTURE_ROTATE_EVENT,
+  GESTURE_SWIPE_EVENT,
   LAST_SIGNAL
 };
 
@@ -2243,6 +2246,70 @@ gtk_widget_class_init (GtkWidgetClass *klass)
 		  _gtk_marshal_BOOLEAN__BOXED,
 		  G_TYPE_BOOLEAN, 1,
 		  GDK_TYPE_EVENT | G_SIGNAL_TYPE_STATIC_SCOPE);
+  /**
+   * GtkWidget::gesture-magnify-event:
+   * @widget: the object which received the signal
+   * @event: the #GdkEventGestureMagnify event
+   *
+   * Emitted when a magnify event is received on @widget's window.
+   *
+   * Returns: %TRUE to stop other handlers from being invoked for the event.
+   *   %FALSE to propagate the event further.
+   *
+   * Since: 2.24 Xamarin specific.
+   */
+  widget_signals[GESTURE_MAGNIFY_EVENT] =
+    g_signal_new (I_("gesture-magnify-event"),
+		  G_TYPE_FROM_CLASS (gobject_class),
+		  G_SIGNAL_RUN_LAST,
+                  0,
+		  _gtk_boolean_handled_accumulator, NULL,
+		  _gtk_marshal_BOOLEAN__BOXED,
+		  G_TYPE_BOOLEAN, 1,
+		  GDK_TYPE_EVENT | G_SIGNAL_TYPE_STATIC_SCOPE);
+  /**
+   * GtkWidget::gesture-rotate-event:
+   * @widget: the object which received the signal
+   * @event: the #GdkEventGestureRotate event
+   *
+   * Emitted when a rotation event is received on @widget's window.
+   *
+   * Returns: %TRUE to stop other handlers from being invoked for the event.
+   *   %FALSE to propagate the event further.
+   *
+   * Since: 2.24 Xamarin specific.
+   */
+  widget_signals[GESTURE_ROTATE_EVENT] =
+    g_signal_new (I_("gesture-rotate-event"),
+		  G_TYPE_FROM_CLASS (gobject_class),
+		  G_SIGNAL_RUN_LAST,
+                  0,
+		  _gtk_boolean_handled_accumulator, NULL,
+		  _gtk_marshal_BOOLEAN__BOXED,
+		  G_TYPE_BOOLEAN, 1,
+		  GDK_TYPE_EVENT | G_SIGNAL_TYPE_STATIC_SCOPE);
+  /**
+   * GtkWidget::gesture-swipe-event:
+   * @widget: the object which received the signal
+   * @event: the #GdkEventGestureSwipe event
+   *
+   * Emitted when a swipe event is received on @widget's window.
+   *
+   * Returns: %TRUE to stop other handlers from being invoked for the event.
+   *   %FALSE to propagate the event further.
+   *
+   * Since: 2.24 Xamarin specific.
+   */
+  widget_signals[GESTURE_SWIPE_EVENT] =
+    g_signal_new (I_("gesture-swipe-event"),
+		  G_TYPE_FROM_CLASS (gobject_class),
+		  G_SIGNAL_RUN_LAST,
+                  0,
+		  _gtk_boolean_handled_accumulator, NULL,
+		  _gtk_marshal_BOOLEAN__BOXED,
+		  G_TYPE_BOOLEAN, 1,
+		  GDK_TYPE_EVENT | G_SIGNAL_TYPE_STATIC_SCOPE);
+
 /**
    * GtkWidget::grab-broken-event:
    * @widget: the object which received the signal
@@ -5054,6 +5121,15 @@ gtk_widget_event_internal (GtkWidget *widget,
 	case GDK_DAMAGE:
 	  signal_num = DAMAGE_EVENT;
 	  break;
+        case GDK_GESTURE_MAGNIFY:
+          signal_num = GESTURE_MAGNIFY_EVENT;
+          break;
+        case GDK_GESTURE_ROTATE:
+          signal_num = GESTURE_ROTATE_EVENT;
+          break;
+        case GDK_GESTURE_SWIPE:
+          signal_num = GESTURE_SWIPE_EVENT;
+          break;
 	default:
 	  g_warning ("gtk_widget_event(): unhandled event type: %d", event->type);
 	  signal_num = -1;

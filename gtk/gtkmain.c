@@ -1657,6 +1657,9 @@ gtk_main_do_event (GdkEvent *event)
     case GDK_WINDOW_STATE:
     case GDK_GRAB_BROKEN:
     case GDK_DAMAGE:
+    case GDK_GESTURE_MAGNIFY:
+    case GDK_GESTURE_ROTATE:
+    case GDK_GESTURE_SWIPE:
       if (!_gtk_widget_captured_event (event_widget, event))
         gtk_widget_event (event_widget, event);
       break;

@@ -65,6 +65,11 @@ typedef struct _GdkEventWindowState GdkEventWindowState;
 typedef struct _GdkEventSetting     GdkEventSetting;
 typedef struct _GdkEventGrabBroken  GdkEventGrabBroken;
 
+/* OS X specific gesture events */
+typedef struct _GdkEventGestureMagnify GdkEventGestureMagnify;
+typedef struct _GdkEventGestureRotate  GdkEventGestureRotate;
+typedef struct _GdkEventGestureSwipe   GdkEventGestureSwipe;
+
 typedef union  _GdkEvent	    GdkEvent;
 
 typedef void (*GdkEventFunc) (GdkEvent *event,
@@ -152,6 +157,9 @@ typedef enum
   GDK_OWNER_CHANGE      = 34,
   GDK_GRAB_BROKEN       = 35,
   GDK_DAMAGE            = 36,
+  GDK_GESTURE_MAGNIFY   = 37,
+  GDK_GESTURE_ROTATE    = 38,
+  GDK_GESTURE_SWIPE     = 39,
   GDK_EVENT_LAST        /* helper variable for decls */
 } GdkEventType;
 
@@ -501,6 +509,52 @@ struct _GdkEventDND {
   gshort x_root, y_root;
 };
 
+/* Event types for OS X gestures */
+
+struct _GdkEventGestureMagnify
+{
+  GdkEventType type;
+  GdkWindow *window;
+  gint8 send_event;
+  guint32 time;
+  gdouble x;
+  gdouble y;
+  guint state;
+  gdouble magnification;
+  GdkDevice *device;
+  gdouble x_root, y_root;
+};
+
+struct _GdkEventGestureRotate
+{
+  GdkEventType type;
+  GdkWindow *window;
+  gint8 send_event;
+  guint32 time;
+  gdouble x;
+  gdouble y;
+  guint state;
+  gdouble rotation;
+  GdkDevice *device;
+  gdouble x_root, y_root;
+};
+
+struct _GdkEventGestureSwipe
+{
+  GdkEventType type;
+  GdkWindow *window;
+  gint8 send_event;
+  guint32 time;
+  gdouble x;
+  gdouble y;
+  guint state;
+  gdouble delta_x;
+  gdouble delta_y;
+  GdkDevice *device;
+  gdouble x_root, y_root;
+};
+
+
 union _GdkEvent
 {
   GdkEventType		    type;
@@ -524,6 +578,9 @@ union _GdkEvent
   GdkEventWindowState       window_state;
   GdkEventSetting           setting;
   GdkEventGrabBroken        grab_broken;
+  GdkEventGestureMagnify    magnify;
+  GdkEventGestureRotate     rotate;
+  GdkEventGestureSwipe      swipe;
 };
 
 GType     gdk_event_get_type            (void) G_GNUC_CONST;

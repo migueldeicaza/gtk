@@ -60,6 +60,7 @@ NSImage  *gdk_quartz_pixbuf_to_ns_image_libgtk_only             (GdkPixbuf      
 id        gdk_quartz_drag_context_get_dragging_info_libgtk_only (GdkDragContext *context);
 NSEvent  *gdk_quartz_event_get_nsevent                          (GdkEvent       *event);
 GdkOSXVersion gdk_quartz_osx_version                            (void);
+gboolean  gdk_quartz_supports_gesture_events                    (void);
 
 GdkAtom   gdk_quartz_pasteboard_type_to_atom_libgtk_only        (NSString       *type);
 NSString *gdk_quartz_target_to_pasteboard_type_libgtk_only      (const gchar    *target);

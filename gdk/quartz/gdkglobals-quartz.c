@@ -60,3 +60,9 @@ gdk_quartz_get_fix_modifiers (void)
 {
   return fix_modifiers;
 }
+
+gboolean
+gdk_quartz_supports_gesture_events (void)
+{
+  return TRUE;
+}

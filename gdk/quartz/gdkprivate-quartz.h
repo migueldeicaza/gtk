@@ -180,6 +180,10 @@ GdkModifierType _gdk_quartz_events_get_current_mouse_modifiers    (void);
 
 void         _gdk_quartz_events_break_all_grabs         (guint32    time);
 
+GdkEvent    *_gdk_quartz_events_create_magnify_event    (NSEvent   *event);
+GdkEvent    *_gdk_quartz_events_create_rotate_event     (NSEvent   *event);
+GdkEvent    *_gdk_quartz_events_create_swipe_event      (NSEvent   *event);
+
 /* Event loop */
 gboolean   _gdk_quartz_event_loop_check_pending (void);
 NSEvent *  _gdk_quartz_event_loop_get_pending   (void);

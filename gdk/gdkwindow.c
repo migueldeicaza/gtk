@@ -9907,6 +9907,9 @@ static const guint type_masks[] = {
   0, /* GDK_OWNER_CHANGE = 34 */
   0, /* GDK_GRAB_BROKEN = 35 */
   0, /* GDK_DAMAGE = 36 */
+  0, /* GDK_GESTURE_MAGNIFY = 37 */
+  0, /* GDK_GESTURE_ROTATE = 38 */
+  0, /* GDK_GESTURE_SWIPE = 39 */
 };
 G_STATIC_ASSERT (G_N_ELEMENTS (type_masks) == GDK_EVENT_LAST);
 
