@@ -1323,11 +1323,12 @@ find_best_matching_source (GtkIconSet       *icon_set,
 			   GtkTextDirection  direction,
 			   GtkStateType      state,
 			   GtkIconSize       size,
-			   gdouble           scale,
+			   gdouble           _scale,
 			   GSList           *failed)
 {
   GtkIconSource *source;
   GSList *tmp_list;
+  gdouble scale = (_scale > 1.0 ? 2.0 : 1.0);
 
   /* We need to find the best icon source.  Direction matters more
    * than state, state matters more than size. icon_set->sources
@@ -2588,10 +2589,11 @@ find_in_cache (GtkIconSet      *icon_set,
                GtkTextDirection direction,
                GtkStateType     state,
                GtkIconSize      size,
-               gdouble          scale)
+               gdouble          _scale)
 {
   GSList *tmp_list;
   GSList *prev;
+  gdouble scale = (_scale > 1.0 ? 2.0 : 1.0);
 
   ensure_cache_up_to_date (icon_set);
 
