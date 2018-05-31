@@ -168,6 +168,12 @@ static pthread_cond_t select_thread_cond = PTHREAD_COND_INITIALIZER;
 static GPollFD *current_pollfds;
 static guint current_n_pollfds;
 
+/* We maintain serial numbers for calls to the start function. Because we
+ * only test for equality of this number (and not smaller/greater than)
+ * no special handling is needed for wrap around.
+ */
+static guint select_thread_start_serial = 0;
+
 /* These are the file descriptors that the select thread should pick
  * up and start polling when it has a chance.
  */
@@ -398,6 +404,8 @@ select_thread_start_poll (GPollFD *ufds,
   gboolean have_new_pollfds = FALSE;
   gint poll_fd_index = -1;
   gint i;
+
+  select_thread_start_serial++;
 
   for (i = 0; i < nfds; i++)
     if (ufds[i].fd == -1)
@@ -713,14 +721,32 @@ poll_func (GPollFD *ufds,
   NSEvent *event;
   NSDate *limit_date;
   gint n_ready;
+  guint current_select_thread_serial;
 
-  static GPollFD *last_ufds;
+  /* Maintain current poll parameters as static parameters. On recursive
+   * calls to poll, we update the values. This way, if the poll array
+   * is updated in an recursive call, we can still access the new array
+   * when the recursion is wound down.
+   *
+   * The ufds value that is pushed in is allocated in g_main_context_iterate()
+   * and is only reallocated for enlargement of this array. The array thus
+   * never shrinks.
+   */
+  static GPollFD *current_ufds = NULL;
+  static int current_nfds = 0;
 
-  last_ufds = ufds;
+  current_ufds = ufds;
+  current_nfds = nfds;
 
   n_ready = select_thread_start_poll (ufds, nfds, timeout_);
   if (n_ready > 0)
     timeout_ = 0;
+
+  /* Using this serial number, we can check below whether the select
+   * thread was started/collected in a recursive invocation of this
+   * function.
+   */
+  current_select_thread_serial = select_thread_start_serial;
 
   if (timeout_ == -1)
     limit_date = [NSDate distantFuture];
@@ -736,17 +762,31 @@ poll_func (GPollFD *ufds,
                                dequeue: YES];
   getting_events--;
 
-  /* We check if last_ufds did not change since the time this function was
-   * called. It is possible that a recursive main loop (and thus recursive
-   * invocation of this poll function) is triggered while in
-   * nextEventMatchingMask:. If during that time new fds are added,
-   * the cached fds array might be replaced in g_main_context_iterate().
-   * So, we should avoid accessing the old fd array (still pointed at by
-   * ufds) here in that case, since it might have been freed. We avoid this
-   * by not calling the collect stage.
-   */
-  if (last_ufds == ufds && n_ready < 0)
-    n_ready = select_thread_collect_poll (ufds, nfds);
+  /* Note that, from this point onwards, ufds might point to freed memory! */
+
+  if (current_select_thread_serial == select_thread_start_serial)
+    {
+      if (n_ready < 0)
+        n_ready = select_thread_collect_poll (current_ufds, nfds);
+
+      /* Nothing should be done in case no poll func recursion occurred
+       * and n_ready > 0.
+       */
+    }
+  else
+    {
+      /* In this case, a recursive invocation of the poll function has
+       * collected results from the select thread. We clear the ufds
+       * values so that stale poll results are not returned. In case
+       * we did not receive results from start poll above, we also
+       * set n_ready to zero.
+       */
+      int i;
+
+      n_ready = 0;
+      for (i = 0; i < nfds; i++)
+        current_ufds[i].revents = 0;
+    }
       
   if (event &&
       [event type] == NSApplicationDefined &&
