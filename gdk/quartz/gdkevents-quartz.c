@@ -46,6 +46,8 @@
 /* This is the window corresponding to the key window */
 static GdkWindow   *current_keyboard_window;
 
+static GdkWindow   *crossing_current_window = NULL;
+
 /* This is the event mask from the last event */
 static GdkEventMask current_event_mask;
 
@@ -1396,18 +1398,29 @@ synthesize_crossing_event (GdkWindow *window,
       if (!(private->event_mask & GDK_ENTER_NOTIFY_MASK))
         return FALSE;
 
+      if (crossing_current_window == window)
+        return FALSE;
+
       fill_crossing_event (window, event, nsevent,
                            x, y,
                            x_root, y_root,
                            GDK_ENTER_NOTIFY,
                            GDK_CROSSING_NORMAL,
                            GDK_NOTIFY_NONLINEAR);
+
+      crossing_current_window = window;
+
       return TRUE;
 
     case NSMouseExited:
       /* See above */
       if (!(private->event_mask & GDK_LEAVE_NOTIFY_MASK))
         return FALSE;
+
+      if (crossing_current_window != NULL && crossing_current_window != window)
+        return FALSE;
+
+      crossing_current_window = NULL;
 
       fill_crossing_event (window, event, nsevent,
                            x, y,
