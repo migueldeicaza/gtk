@@ -225,10 +225,14 @@ gtk_ns_view_init (GtkNSView *ns_view)
 @end
 
 static void
-gtk_ns_view_swizzle_draw_rect (NSView *view)
+gtk_ns_view_swizzle_draw_rect_recursive (NSView      *view,
+                                         const gchar *associated_key,
+                                         gpointer     associated_object)
 {
   Method original_drawRect;
   Method my_drawRect;
+  NSArray *subviews;
+  gint i;
 
   original_drawRect = class_getInstanceMethod ([view class],
                                                @selector (drawRect:));
@@ -244,6 +248,18 @@ gtk_ns_view_swizzle_draw_rect (NSView *view)
                            @selector (drawRect:),
                            method_getImplementation (my_drawRect),
                            method_getTypeEncoding (my_drawRect));
+    }
+
+  objc_setAssociatedObject (view, associated_key, (id) associated_object,
+                            OBJC_ASSOCIATION_ASSIGN);
+
+  subviews = [view subviews];
+
+  for (i = 0; i < [subviews count]; i++)
+    {
+      gtk_ns_view_swizzle_draw_rect_recursive ([subviews objectAtIndex: i],
+                                               associated_key,
+                                               associated_object);
     }
 }
 
@@ -263,10 +279,8 @@ gtk_ns_view_constructed (GObject *object)
               gtk_widget_get_can_focus (GTK_WIDGET (ns_view)));
 #endif
 
-  gtk_ns_view_swizzle_draw_rect (ns_view->priv->view);
-
-  objc_setAssociatedObject (ns_view->priv->view, "gtknsview", (id) ns_view,
-                            OBJC_ASSOCIATION_ASSIGN);
+  gtk_ns_view_swizzle_draw_rect_recursive (ns_view->priv->view,
+                                           "gtknsview", ns_view);
 }
 
 static void
@@ -428,10 +442,7 @@ gtk_ns_view_map (GtkWidget *widget)
 
       if (text)
         {
-          gtk_ns_view_swizzle_draw_rect (text);
-
-          objc_setAssociatedObject (text, "gtkwindow", (id) toplevel,
-                                    OBJC_ASSOCIATION_ASSIGN);
+          gtk_ns_view_swizzle_draw_rect_recursive (text, "gtkwindow", toplevel);
         }
     }
 }
