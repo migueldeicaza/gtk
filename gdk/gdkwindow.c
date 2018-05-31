@@ -10901,12 +10901,20 @@ proxy_button_event (GdkEvent *source_event,
    */
   if (type == GDK_SCROLL && source_event->scroll.has_deltas)
     {
+      gboolean legacy_mouse =
+          source_event->scroll.phase == GDK_EVENT_SCROLL_PHASE_NONE &&
+          source_event->scroll.momentum_phase == GDK_EVENT_SCROLL_PHASE_NONE;
+
       if (source_event->scroll.phase == GDK_EVENT_SCROLL_PHASE_START)
         {
           set_last_scroll_event_windows (display, pointer_window, event_win);
         }
-      else
+      else if (!legacy_mouse)
         {
+          /* Never override pointer and event windows for legacy devices
+           * which are not capable of momentum scrolling. (The windows
+           * will be NULL, because they have never been set).
+           */
           pointer_window = g_object_get_qdata (G_OBJECT (display),
                                                quark_last_scroll_pointer_window);
           event_win = g_object_get_qdata (G_OBJECT (display),
