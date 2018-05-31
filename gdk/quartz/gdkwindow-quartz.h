@@ -47,6 +47,7 @@ struct _GdkWindowImplQuartz
   NSWindow *toplevel;
   NSTrackingRectTag tracking_rect;
   GdkQuartzView *view;
+  NSView *layer_view;
 
   GdkWindowTypeHint type_hint;
 

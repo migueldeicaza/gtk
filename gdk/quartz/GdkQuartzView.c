@@ -668,6 +668,8 @@
       [[self window] invalidateShadow];
       needsInvalidateShadow = NO;
     }
+
+  [[self layer] removeAllAnimations];
 }
 
 -(void)setNeedsInvalidateShadow: (BOOL)invalidate
@@ -726,7 +728,11 @@
 
 -(void)setFrame: (NSRect)frame
 {
+  GdkWindowObject *private = GDK_WINDOW_OBJECT (gdk_window);
+  GdkWindowImplQuartz *impl = GDK_WINDOW_IMPL_QUARTZ (private->impl);
+
   [super setFrame: frame];
+  [impl->layer_view setFrame: frame];
 
   if ([self window])
     [self updateTrackingRect];

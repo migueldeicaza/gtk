@@ -76,6 +76,17 @@ gdk_quartz_window_get_nsview (GdkWindow *window)
   return ((GdkWindowImplQuartz *)private->impl)->view;
 }
 
+NSView *
+gdk_quartz_window_get_layer_view (GdkWindow *window)
+{
+  GdkWindowObject *private = (GdkWindowObject *)window;
+
+  if (GDK_WINDOW_DESTROYED (window))
+    return NULL;
+
+  return ((GdkWindowImplQuartz *)private->impl)->layer_view;
+}
+
 NSWindow *
 gdk_quartz_window_get_nswindow (GdkWindow *window)
 {
@@ -1032,6 +1043,11 @@ _gdk_window_impl_new (GdkWindow     *window,
 	[impl->view setGdkWindow:window];
 	[impl->toplevel setContentView:impl->view];
 	[impl->view release];
+
+        impl->layer_view = [[NSView alloc] initWithFrame:content_rect];
+        [impl->view addSubview:impl->layer_view];
+        [impl->layer_view setWantsLayer:YES];
+        [impl->layer_view release];
       }
       break;
 
