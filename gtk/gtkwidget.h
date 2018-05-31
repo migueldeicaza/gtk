@@ -1194,6 +1194,11 @@ GdkPixbuf    *gtk_widget_render_icon          (GtkWidget   *widget,
                                                const gchar *stock_id,
                                                GtkIconSize  size,
                                                const gchar *detail);
+GdkPixbuf    *gtk_widget_render_icon_scaled   (GtkWidget      *widget,
+                                               const gchar    *stock_id,
+                                               GtkIconSize     size,
+                                               const gchar    *detail,
+                                               gdouble        *real_scale);
 
 /* handle composite names for GTK_COMPOSITE_CHILD widgets,
  * the returned name is newly allocated.

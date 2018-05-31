@@ -7502,6 +7502,33 @@ gtk_widget_render_icon (GtkWidget      *widget,
   return retval;
 }
 
+GdkPixbuf*
+gtk_widget_render_icon_scaled (GtkWidget      *widget,
+			       const gchar    *stock_id,
+			       GtkIconSize     size,
+			       const gchar    *detail,
+			       gdouble        *real_scale)
+{
+  GtkIconSet *icon_set;
+  GdkPixbuf *retval;
+
+  g_return_val_if_fail (GTK_IS_WIDGET (widget), NULL);
+  g_return_val_if_fail (stock_id != NULL, NULL);
+  g_return_val_if_fail (size > GTK_ICON_SIZE_INVALID || size == -1, NULL);
+
+  gtk_widget_ensure_style (widget);
+
+  icon_set = gtk_style_lookup_icon_set (widget->style, stock_id);
+
+  if (icon_set == NULL)
+    return NULL;
+
+  return gtk_icon_set_render_icon_scaled (icon_set, widget->style,
+                                          gtk_widget_get_direction (widget),
+                                          gtk_widget_get_state (widget),
+                                          size, widget, detail, real_scale);
+}
+
 /**
  * gtk_widget_set_parent_window:
  * @widget: a #GtkWidget.
