@@ -454,6 +454,13 @@ gdk_screen_get_monitor_plug_name (GdkScreen *screen,
   return g_strdup (screen_x11->monitors[monitor_num].output_name);
 }
 
+gdouble
+gdk_screen_get_monitor_scale_factor (GdkScreen *screen,
+                                     gint       monitor_num)
+{
+  return 1.0;
+}
+
 /**
  * gdk_x11_screen_get_monitor_output:
  * @screen: a #GdkScreen

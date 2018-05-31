@@ -11527,6 +11527,30 @@ gdk_window_get_height (GdkWindow *window)
   return height;
 }
 
+gdouble
+gdk_window_get_scale_factor (GdkWindow *window)
+{
+  GdkWindowObject *private;
+  GdkWindowImplIface *impl_iface;
+
+  g_return_val_if_fail (GDK_IS_WINDOW (window), 1.0);
+
+  private = (GdkWindowObject *) window;
+  if (private->destroyed)
+    return 1.0;
+
+  window = gdk_window_get_toplevel (window);
+
+  if (gdk_window_has_impl (private))
+    {
+      impl_iface = GDK_WINDOW_IMPL_GET_IFACE (private->impl);
+
+      if (impl_iface->get_scale_factor)
+        return impl_iface->get_scale_factor (window);
+    }
+
+  return 1.0;
+}
 
 #define __GDK_WINDOW_C__
 #include "gdkaliasdef.c"

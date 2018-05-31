@@ -146,6 +146,9 @@ struct _GdkWindowImplIface
   void         (* input_window_destroy) (GdkWindow       *window);
   void         (* input_window_crossing)(GdkWindow       *window,
 					 gboolean         enter);
+
+  gdouble      (* get_scale_factor)     (GdkWindow       *window);
+
   gboolean     supports_native_bg;
 };
 

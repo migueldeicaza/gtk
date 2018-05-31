@@ -341,6 +341,7 @@ GdkDisplay*   gdk_window_get_display           (GdkWindow     *window);
 GdkVisual*    gdk_window_get_visual            (GdkWindow     *window);
 int           gdk_window_get_width             (GdkWindow     *window);
 int           gdk_window_get_height            (GdkWindow     *window);
+gdouble       gdk_window_get_scale_factor      (GdkWindow     *window);
 
 GdkWindow*    gdk_window_at_pointer            (gint          *win_x,
                                                 gint          *win_y);

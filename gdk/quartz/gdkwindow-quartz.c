@@ -3232,6 +3232,27 @@ _gdk_windowing_window_get_input_shape (GdkWindow *window)
   return NULL;
 }
 
+/* Protocol to build cleanly for OSX < 10.7 */
+@protocol ScaleFactor
+- (CGFloat) backingScaleFactor;
+@end
+
+static gdouble
+gdk_window_quartz_get_scale_factor (GdkWindow *window)
+{
+  GdkWindowImplQuartz *impl;
+
+  if (GDK_WINDOW_DESTROYED (window))
+    return 1.0;
+
+  impl = GDK_WINDOW_IMPL_QUARTZ (GDK_WINDOW_OBJECT (window)->impl);
+
+  if (gdk_quartz_osx_version() >= GDK_OSX_LION)
+    return [(id <ScaleFactor>) impl->toplevel backingScaleFactor];
+
+  return 1.0;
+}
+
 static void
 gdk_window_impl_iface_init (GdkWindowImplIface *iface)
 {
@@ -3260,4 +3281,5 @@ gdk_window_impl_iface_init (GdkWindowImplIface *iface)
   iface->destroy = _gdk_quartz_window_destroy;
   iface->input_window_destroy = _gdk_input_window_destroy;
   iface->input_window_crossing = _gdk_input_window_crossing;
+  iface->get_scale_factor = gdk_window_quartz_get_scale_factor;
 }

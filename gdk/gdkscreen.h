@@ -109,6 +109,8 @@ gint          gdk_screen_get_monitor_height_mm (GdkScreen *screen,
                                                 gint       monitor_num);
 gchar *       gdk_screen_get_monitor_plug_name (GdkScreen *screen,
                                                 gint       monitor_num);
+gdouble       gdk_screen_get_monitor_scale_factor (GdkScreen *screen,
+                                                   gint       monitor_num);
 
 void          gdk_screen_broadcast_client_message  (GdkScreen       *screen,
 						    GdkEvent        *event);
