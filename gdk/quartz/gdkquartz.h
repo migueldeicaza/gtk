@@ -65,6 +65,9 @@ GdkAtom   gdk_quartz_pasteboard_type_to_atom_libgtk_only        (NSString       
 NSString *gdk_quartz_target_to_pasteboard_type_libgtk_only      (const gchar    *target);
 NSString *gdk_quartz_atom_to_pasteboard_type_libgtk_only        (GdkAtom         atom);
 
+void      gdk_quartz_set_fix_modifiers (gboolean fix);
+gboolean  gdk_quartz_get_fix_modifiers (void);
+
 G_END_DECLS
 
 #endif /* __GDK_QUARTZ_H__ */

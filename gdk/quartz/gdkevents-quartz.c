@@ -396,10 +396,19 @@ get_keyboard_modifiers_from_ns_flags (NSUInteger nsflags)
     modifiers |= GDK_SHIFT_MASK;
   if (nsflags & NSControlKeyMask)
     modifiers |= GDK_CONTROL_MASK;
-  if (nsflags & NSAlternateKeyMask)
-    modifiers |= GDK_MOD1_MASK;
-  if (nsflags & NSCommandKeyMask)
-    modifiers |= GDK_MOD2_MASK;
+
+  if (gdk_quartz_get_fix_modifiers ())
+    {
+      if (nsflags & NSAlternateKeyMask)
+        modifiers |= GDK_MOD1_MASK;
+      if (nsflags & NSCommandKeyMask)
+        modifiers |= GDK_MOD2_MASK;
+    }
+  else
+    {
+      if (nsflags & NSCommandKeyMask)
+        modifiers |= GDK_MOD1_MASK;
+    }
 
   return modifiers;
 }
@@ -1106,7 +1115,7 @@ fill_key_event (GdkWindow    *window,
         {
         case GDK_Meta_R:
         case GDK_Meta_L:
-          mask = GDK_MOD2_MASK;
+          mask = gdk_quartz_get_fix_modifiers () ? GDK_MOD2_MASK : GDK_MOD1_MASK;
           break;
         case GDK_Shift_R:
         case GDK_Shift_L:
@@ -1117,7 +1126,7 @@ fill_key_event (GdkWindow    *window,
           break;
         case GDK_Alt_R:
         case GDK_Alt_L:
-          mask = GDK_MOD1_MASK;
+          mask = gdk_quartz_get_fix_modifiers () ? GDK_MOD1_MASK : GDK_MOD2_MASK;
           break;
         case GDK_Control_R:
         case GDK_Control_L:
@@ -1278,9 +1287,9 @@ _gdk_quartz_events_get_current_keyboard_modifiers (void)
       if (carbon_modifiers & controlKey)
         modifiers |= GDK_CONTROL_MASK;
       if (carbon_modifiers & optionKey)
-        modifiers |= GDK_MOD1_MASK;
+        modifiers |= (gdk_quartz_get_fix_modifiers () ? GDK_MOD1_MASK : GDK_MOD2_MASK);
       if (carbon_modifiers & cmdKey)
-        modifiers |= GDK_MOD2_MASK;
+        modifiers |= (gdk_quartz_get_fix_modifiers () ? GDK_MOD2_MASK : GDK_MOD1_MASK);
 
       return modifiers;
     }
