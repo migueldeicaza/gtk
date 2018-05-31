@@ -1844,7 +1844,18 @@ gdk_event_translate (GdkEvent *event,
         GdkQuartzWindow *nswindow = ((GdkWindowImplQuartz *)private->impl)->toplevel;
         GdkQuartzView *nsview = ((GdkWindowImplQuartz *)private->impl)->view;
 
-        if (![[nswindow firstResponder] respondsToSelector:@selector(isGtkView)])
+        NSView *tmp_view = [nswindow firstResponder];
+        gboolean gtk_child = FALSE;
+
+        while (tmp_view != NULL)
+          {
+            if (tmp_view && [tmp_view respondsToSelector:@selector(isGtkView)])
+              gtk_child = TRUE;
+
+            tmp_view = [tmp_view superview];
+          }
+
+        if (!gtk_child && ![[nswindow firstResponder] respondsToSelector:@selector(isGtkView)])
           {
             return_val = FALSE;
             break;
