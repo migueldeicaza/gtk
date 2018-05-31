@@ -1781,6 +1781,44 @@ gtk_combo_box_menu_position (GtkMenu  *menu,
 				    menu_item);
 
       gtk_combo_box_menu_position_over (menu, x, y, push_in, user_data);
+
+      if (menu_item)
+        {
+          GdkScreen *screen;
+          GtkWidget *widget = GTK_WIDGET (combo_box);
+          gint monitor_num;
+          GdkRectangle monitor;
+          gint px, py;
+          gint menu_height;
+          gint scroll_offset = 0;
+
+          screen = gtk_widget_get_screen (widget);
+          gdk_display_get_pointer (gdk_screen_get_display (screen),
+                                   NULL, &px, &py, NULL);
+
+          monitor_num = gdk_screen_get_monitor_at_point (screen, px, py);
+
+          gdk_screen_get_monitor_workarea (screen, monitor_num, &monitor);
+
+          menu_height = GTK_WIDGET (menu)->requisition.height;
+
+          if (*y + menu_height > monitor.y + monitor.height)
+            {
+              scroll_offset -= *y + menu_height - (monitor.y + monitor.height);
+            }
+          else if (*y < monitor.y)
+            {
+              scroll_offset += monitor.y - *y;
+            }
+
+          /* don't scroll the menu if less than 3 items would be visible,
+           * use 4 to roughly take the scroll buttons into account
+           */
+          if (scroll_offset != 0 &&
+              (menu->toplevel->requisition.height - ABS (scroll_offset) <
+               5 * menu_item->requisition.height))
+            gtk_combo_box_menu_position_below (menu, x, y, push_in, user_data);
+        }
     }
 
   if (!gtk_widget_get_visible (GTK_MENU (priv->popup_widget)->toplevel))
