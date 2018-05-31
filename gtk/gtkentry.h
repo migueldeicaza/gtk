@@ -264,6 +264,9 @@ void           gtk_entry_set_icon_from_icon_name         (GtkEntry             *
 void           gtk_entry_set_icon_from_gicon             (GtkEntry             *entry,
 							  GtkEntryIconPosition  icon_pos,
 							  GIcon                *icon);
+void           gtk_entry_set_icon_from_icon_set          (GtkEntry             *entry,
+							  GtkEntryIconPosition  icon_pos,
+							  GtkIconSet           *icon_set);
 GtkImageType gtk_entry_get_icon_storage_type             (GtkEntry             *entry,
 							  GtkEntryIconPosition  icon_pos);
 GdkPixbuf*   gtk_entry_get_icon_pixbuf                   (GtkEntry             *entry,
@@ -274,6 +277,10 @@ const gchar* gtk_entry_get_icon_name                     (GtkEntry             *
 							  GtkEntryIconPosition  icon_pos);
 GIcon*       gtk_entry_get_icon_gicon                    (GtkEntry             *entry,
 							  GtkEntryIconPosition  icon_pos);
+const GtkIconSet *
+             gtk_entry_get_icon_set                      (GtkEntry             *entry,
+                                                          GtkEntryIconPosition  icon_pos);
+
 void         gtk_entry_set_icon_activatable              (GtkEntry             *entry,
 							  GtkEntryIconPosition  icon_pos,
 							  gboolean              activatable);
