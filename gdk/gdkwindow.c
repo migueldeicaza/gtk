@@ -127,6 +127,7 @@ enum {
   TO_EMBEDDER,
   FROM_EMBEDDER,
   NATIVE_CHILD_EVENT,
+  MOVE_NATIVE_CHILDREN,
   LAST_SIGNAL
 };
 
@@ -609,6 +610,15 @@ gdk_window_class_init (GdkWindowObjectClass *klass)
 		  G_TYPE_POINTER,
 		  G_TYPE_POINTER);
 
+  signals[MOVE_NATIVE_CHILDREN] =
+    g_signal_new (g_intern_static_string ("move-native-children"),
+                  G_OBJECT_CLASS_TYPE (object_class),
+                  G_SIGNAL_RUN_LAST,
+                  0,
+                  NULL, NULL,
+                  g_cclosure_marshal_VOID__VOID,
+                  G_TYPE_NONE,
+                  0);
 }
 
 static void
@@ -7524,6 +7534,8 @@ move_native_children (GdkWindowObject *private)
       else
 	move_native_children  (child);
     }
+
+  g_signal_emit_by_name (private, "move-native-children");
 }
 
 static gboolean
