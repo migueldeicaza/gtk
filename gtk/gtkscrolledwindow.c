@@ -2010,12 +2010,10 @@ gtk_scrolled_window_scroll_event (GtkWidget      *widget,
       if (old_overshoot_x != 0 || old_overshoot_y != 0)
         is_overshot = TRUE;
 
-      /* In case the view is not overshot, no snap back is active
-       * and this event is not a momentum event, then a new scrolling
-       * gesture has started. In case we are still in snapping back
-       * state we can reset this (because the snapback has ended).
+      /* If a new gesture has started, reset snap back state.
+       * FIXME: check if overshoot has really ended.
        */
-      if (!is_overshot && priv->deceleration_id == 0 && !is_momentum_event)
+      if (event->phase == GDK_EVENT_SCROLL_PHASE_START)
         priv->is_snapping_back = FALSE;
 
       /* Scroll events are handled in two cases:
@@ -2109,13 +2107,12 @@ gtk_scrolled_window_scroll_event (GtkWidget      *widget,
         _gtk_scrolled_window_allocate_overshoot_window (scrolled_window);
 
       /* In two cases we want to start snapping back:
-       *  1) The view is overshot and the gesture has ended (signalled
-       *  by an event with both deltas set to zero.
+       *  1) The view is overshot and the gesture has ended.
        *  2) The view is overshot and we receive a momentum event, which
        *  also signals that the user's gesture has ended.
        */
       if (is_overshot &&
-          ((delta_x == 0.0 && delta_y == 0.0) || is_momentum_event))
+          (event->phase == GDK_EVENT_SCROLL_PHASE_END || is_momentum_event))
         start_snap_back = TRUE;
 
       /* If we should start a snap back and no current deceleration
