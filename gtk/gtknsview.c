@@ -77,12 +77,14 @@ static gboolean   gtk_ns_view_key_press     (GtkWidget      *widget,
 static gboolean   gtk_ns_view_key_release   (GtkWidget      *widget,
                                              GdkEventKey    *event);
 
-static void       gtk_ns_view_native_child_event (GdkWindow     *window,
-                                                  NSView        *view,
-                                                  NSEvent       *event,
-                                                  GtkNSView     *ns_view);
-static gboolean   gtk_ns_view_forward_event      (GtkWidget     *widget,
-                                                  GdkEventKey   *event);
+static void       gtk_ns_view_native_child_event   (GdkWindow     *window,
+                                                    NSView        *view,
+                                                    NSEvent       *event,
+                                                    GtkNSView     *ns_view);
+static void       gtk_ns_view_move_native_children (GdkWindow     *window,
+                                                    GtkNSView     *ns_view);
+static gboolean   gtk_ns_view_forward_event        (GtkWidget     *widget,
+                                                    GdkEventKey   *event);
 
 
 G_DEFINE_TYPE (GtkNSView, gtk_ns_view, GTK_TYPE_WIDGET)
@@ -287,6 +289,10 @@ gtk_ns_view_map (GtkWidget *widget)
                            G_CALLBACK (gtk_ns_view_native_child_event),
                            G_OBJECT (widget), 0);
 
+  g_signal_connect_object (gtk_widget_get_window (widget), "move-native-children",
+                           G_CALLBACK (gtk_ns_view_move_native_children),
+                           G_OBJECT (widget), 0);
+
   GTK_WIDGET_CLASS (gtk_ns_view_parent_class)->map (widget);
 }
 
@@ -295,6 +301,10 @@ gtk_ns_view_unmap (GtkWidget *widget)
 {
   GtkNSView *ns_view = GTK_NS_VIEW (widget);
   GtkWidget *toplevel = gtk_widget_get_toplevel (widget);
+
+  g_signal_handlers_disconnect_by_func (gtk_widget_get_window (widget),
+                                        gtk_ns_view_move_native_children,
+                                        widget);
 
   g_signal_handlers_disconnect_by_func (gtk_widget_get_window (toplevel),
                                         gtk_ns_view_native_child_event,
@@ -410,6 +420,16 @@ gtk_ns_view_native_child_event (GdkWindow *window,
           break;
         }
     }
+}
+
+static void
+gtk_ns_view_move_native_children (GdkWindow *window,
+                                  GtkNSView *ns_view)
+{
+  GtkAllocation allocation;
+
+  gtk_widget_get_allocation (GTK_WIDGET (ns_view), &allocation);
+  gtk_ns_view_position_view (ns_view, &allocation);
 }
 
 static gboolean
