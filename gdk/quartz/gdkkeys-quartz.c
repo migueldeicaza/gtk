@@ -55,6 +55,7 @@
 #include <AppKit/NSEvent.h>
 #include "gdk.h"
 #include "gdkkeysyms.h"
+#include "gdkprivate-quartz.h"
 
 #define NUM_KEYCODES 128
 #define KEYVALS_PER_KEYCODE 4
@@ -65,6 +66,7 @@ static GdkKeymap *default_keymap = NULL;
  * TThere is 1 keyval per modifier (Nothing, Shift, Alt, Shift+Alt);
  */
 static guint *keyval_array = NULL;
+static CFArrayRef global_hotkeys = NULL;
 
 static inline UniChar
 macroman2ucs (unsigned char c)
@@ -806,6 +808,24 @@ gdk_keymap_map_virtual_modifiers (GdkKeymap       *keymap,
   return TRUE;
 }
 
+void
+_gdk_quartz_update_symbolic_hotkeys ()
+{
+  _gdk_quartz_release_symbolic_hotkeys ();
+
+  CopySymbolicHotKeys (&global_hotkeys);
+}
+
+void
+_gdk_quartz_release_symbolic_hotkeys ()
+{
+  if (global_hotkeys != NULL)
+    {
+      CFRelease (global_hotkeys);
+      global_hotkeys = NULL;
+    }
+}
+
 /* What sort of key event is this? Returns one of
  * GDK_KEY_PRESS, GDK_KEY_RELEASE, GDK_NOTHING (should be ignored)
  */
@@ -814,20 +834,19 @@ _gdk_quartz_keys_event_type (NSEvent *event)
 {
   unsigned short keycode = [event keyCode];
   unsigned int flags = [event modifierFlags];
-  CFArrayRef global_keys = NULL;
   unsigned int eventmods = (flags & NSCommandKeyMask ? cmdKey : 0) |
                            (flags & NSAlternateKeyMask ? optionKey : 0) |
                            (flags & NSControlKeyMask ? controlKey : 0) |
                            (flags & NSShiftKeyMask ? shiftKey : 0);
   int i;
 
-  if (CopySymbolicHotKeys (&global_keys) == noErr && global_keys != NULL)
+  if (global_hotkeys != NULL)
     {
-      CFIndex length = CFArrayGetCount (global_keys);
+      CFIndex length = CFArrayGetCount (global_hotkeys);
 
       for (i = 0; i < length; i++)
 	{
-	  CFDictionaryRef key_info = CFArrayGetValueAtIndex (global_keys, i);
+	  CFDictionaryRef key_info = CFArrayGetValueAtIndex (global_hotkeys, i);
 
 	  CFNumberRef code = CFDictionaryGetValue (key_info, kHISymbolicHotKeyCode);
 	  CFNumberRef mods = CFDictionaryGetValue (key_info, kHISymbolicHotKeyModifiers);
@@ -846,8 +865,6 @@ _gdk_quartz_keys_event_type (NSEvent *event)
 	}
     }
 
-    CFRelease (global_keys);
-  
   switch ([event type])
     {
     case NSKeyDown:

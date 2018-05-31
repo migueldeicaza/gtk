@@ -701,6 +701,8 @@ _gdk_quartz_events_update_focus_window (GdkWindow *window,
        * everything in the window is set to correct state.
        */
       generate_motion_event (window);
+
+      _gdk_quartz_update_symbolic_hotkeys ();
     }
 }
 

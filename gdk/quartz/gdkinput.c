@@ -568,6 +568,8 @@ _gdk_input_exit (void)
       g_free (tmp_list->data);
     }
   g_list_free (_gdk_input_windows);
+
+  _gdk_quartz_release_symbolic_hotkeys ();
 }
 
 gboolean
