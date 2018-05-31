@@ -2141,7 +2141,12 @@ gtk_scrolled_window_scroll_event (GtkWidget      *widget,
       gint old_overshoot_x, old_overshoot_y;
       gboolean start_snap_back = FALSE;
       gboolean is_overshot = FALSE;
-      gboolean is_momentum_event = event->phase == GDK_EVENT_SCROLL_PHASE_NONE;
+      gboolean is_momentum_event = event->momentum_phase != GDK_EVENT_SCROLL_PHASE_NONE;
+      gboolean legacy_mouse = FALSE;
+
+      if (event->phase == GDK_EVENT_SCROLL_PHASE_NONE &&
+          event->momentum_phase == GDK_EVENT_SCROLL_PHASE_NONE)
+        legacy_mouse = TRUE;
 
       _gtk_scrolled_window_get_overshoot (scrolled_window,
                                           &old_overshoot_x, &old_overshoot_y);
@@ -2150,10 +2155,12 @@ gtk_scrolled_window_scroll_event (GtkWidget      *widget,
       if (old_overshoot_x != 0 || old_overshoot_y != 0)
         is_overshot = TRUE;
 
-      /* If a new gesture has started, reset snap back state.
+      /* If a new gesture has started or we detect the end of a momentum
+       * phase, reset snap back state.
        * FIXME: check if overshoot has really ended.
        */
-      if (event->phase == GDK_EVENT_SCROLL_PHASE_START)
+      if (event->momentum_phase == GDK_EVENT_SCROLL_PHASE_END ||
+          event->phase == GDK_EVENT_SCROLL_PHASE_START)
         {
           priv->is_snapping_back = FALSE;
           priv->gesture_in_progress = TRUE;
@@ -2193,8 +2200,9 @@ gtk_scrolled_window_scroll_event (GtkWidget      *widget,
                */
               adj = gtk_range_get_adjustment (GTK_RANGE (scrolled_window->hscrollbar));
               gdouble max_adj = gtk_adjustment_get_upper (adj) - gtk_adjustment_get_page_size (adj);
-              if (gtk_adjustment_get_value (adj) < 1.0 ||
-                  gtk_adjustment_get_value (adj) > max_adj - 1.0)
+              if (!legacy_mouse &&
+                  (gtk_adjustment_get_value (adj) < 1.0 ||
+                   gtk_adjustment_get_value (adj) > max_adj - 1.0))
                 may_overshoot = TRUE;
 
               if (scrolled_window->hscrollbar_visible && (is_overshot || may_overshoot))
@@ -2240,8 +2248,9 @@ gtk_scrolled_window_scroll_event (GtkWidget      *widget,
                */
               adj = gtk_range_get_adjustment (GTK_RANGE (scrolled_window->vscrollbar));
               gdouble max_adj = gtk_adjustment_get_upper (adj) - gtk_adjustment_get_page_size (adj);
-              if (gtk_adjustment_get_value (adj) < 1.0 ||
-                    gtk_adjustment_get_value (adj) > max_adj - 1.0)
+              if (!legacy_mouse &&
+                  (gtk_adjustment_get_value (adj) < 1.0 ||
+                   gtk_adjustment_get_value (adj) > max_adj - 1.0))
                 may_overshoot = TRUE;
 
               if (scrolled_window->vscrollbar_visible && (is_overshot || may_overshoot))
