@@ -2725,6 +2725,10 @@ gtk_scrolled_window_scroll_step_timeout (gpointer data)
 }
 
 static gboolean
+gtk_scrolled_window_captured_motion_notify_scrollbar (GtkWidget *widget,
+                                                      GdkEvent  *event);
+
+static gboolean
 gtk_scrolled_window_captured_button_press_scrollbar (GtkWidget *widget,
                                                      GdkEvent  *event)
 {
@@ -2808,12 +2812,36 @@ gtk_scrolled_window_captured_button_press_scrollbar (GtkWidget *widget,
       if ((priv->sb_grab_vscroll || priv->sb_grab_hscroll) &&
           !priv->sb_drag_slider)
         {
-          gtk_scrolled_window_scroll_step (scrolled_window);
+          gboolean primary_warps;
 
-          priv->sb_scroll_timeout_id =
-            gdk_threads_add_timeout (SCROLL_INTERVAL_INITIAL,
-                                     gtk_scrolled_window_scroll_step_timeout,
-                                     scrolled_window);
+          g_object_get (gtk_widget_get_settings (widget),
+                        "gtk-primary-button-warps-slider", &primary_warps,
+                        NULL);
+
+          if (primary_warps)
+            {
+              GdkEventMotion mevent = { 0, };
+
+              priv->sb_drag_slider = TRUE;
+              priv->sb_grab_offset_x = hslider_rect.width / 2;
+              priv->sb_grab_offset_y = vslider_rect.height / 2;
+
+              mevent.window = bevent->window;
+              mevent.x = bevent->x;
+              mevent.y = bevent->y;
+
+              gtk_scrolled_window_captured_motion_notify_scrollbar (widget,
+                                                                    (GdkEvent *) &mevent);
+            }
+          else
+            {
+              gtk_scrolled_window_scroll_step (scrolled_window);
+
+              priv->sb_scroll_timeout_id =
+                gdk_threads_add_timeout (SCROLL_INTERVAL_INITIAL,
+                                         gtk_scrolled_window_scroll_step_timeout,
+                                         scrolled_window);
+            }
         }
 
       return TRUE;
