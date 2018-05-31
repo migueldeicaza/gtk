@@ -98,6 +98,9 @@ static void       gtk_tooltip_display_closed       (GdkDisplay      *display,
 static void       gtk_tooltip_set_last_window      (GtkTooltip      *tooltip,
 						    GdkWindow       *window);
 static void       update_shape                     (GtkTooltip      *tooltip);
+static void       toplevel_focus_out               (GtkWidget       *widget,
+                                                    GdkEventFocus   *event,
+                                                    GtkTooltip      *tooltip);
 
 
 G_DEFINE_TYPE (GtkTooltip, gtk_tooltip, G_TYPE_OBJECT);
@@ -1169,6 +1172,7 @@ gtk_tooltip_show_tooltip (GdkDisplay *display)
   GdkScreen *screen;
 
   GdkWindow *window;
+  GtkWidget *toplevel;
   GtkWidget *tooltip_widget;
   GtkWidget *pointer_widget;
   GtkTooltip *tooltip;
@@ -1220,6 +1224,11 @@ gtk_tooltip_show_tooltip (GdkDisplay *display)
 	tooltip->current_window = GTK_WINDOW (GTK_TOOLTIP (tooltip)->window);
     }
 
+  toplevel = gtk_widget_get_toplevel (GTK_WIDGET (tooltip_widget));
+  g_signal_connect (toplevel, "focus-out-event",
+                    G_CALLBACK (toplevel_focus_out),
+                    tooltip);
+
   screen = gtk_widget_get_screen (tooltip_widget);
 
   /* FIXME: should use tooltip->current_window iso tooltip->window */
@@ -1251,6 +1260,8 @@ gtk_tooltip_show_tooltip (GdkDisplay *display)
 static void
 gtk_tooltip_hide_tooltip (GtkTooltip *tooltip)
 {
+  GtkWidget *toplevel;
+
   if (!tooltip)
     return;
 
@@ -1262,6 +1273,10 @@ gtk_tooltip_hide_tooltip (GtkTooltip *tooltip)
 
   if (!GTK_TOOLTIP_VISIBLE (tooltip))
     return;
+
+  toplevel = gtk_widget_get_toplevel (tooltip->tooltip_widget);
+  if (toplevel)
+    g_signal_handlers_disconnect_by_func (toplevel, G_CALLBACK (toplevel_focus_out), tooltip);
 
   tooltip->tooltip_widget = NULL;
 
@@ -1300,6 +1315,14 @@ gtk_tooltip_hide_tooltip (GtkTooltip *tooltip)
       gtk_widget_hide (GTK_WIDGET (tooltip->current_window));
       tooltip->current_window = NULL;
     }
+}
+
+static void
+toplevel_focus_out (GtkWidget    *widget,
+                    GdkEventFocus *event,
+                    GtkTooltip    *tooltip)
+{
+  gtk_tooltip_hide_tooltip (tooltip);
 }
 
 static gint
