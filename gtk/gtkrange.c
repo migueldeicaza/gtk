@@ -2561,7 +2561,7 @@ gtk_range_button_release (GtkWidget      *widget,
 /**
  * _gtk_range_get_wheel_delta:
  * @range: a #GtkRange
- * @direction: A #GdkScrollDirection
+ * @event: A #GdkEventScroll
  * 
  * Returns a good step value for the mouse wheel.
  * 
@@ -2570,27 +2570,52 @@ gtk_range_button_release (GtkWidget      *widget,
  * Since: 2.4
  **/
 gdouble
-_gtk_range_get_wheel_delta (GtkRange           *range,
-			    GdkScrollDirection  direction)
+_gtk_range_get_wheel_delta (GtkRange       *range,
+                            GdkEventScroll *event)
 {
   GtkAdjustment *adj = range->adjustment;
+  gdouble dx, dy;
   gdouble delta;
 
-  if (GTK_IS_SCROLLBAR (range))
-    delta = pow (adj->page_size, 2.0 / 3.0);
+  if (gdk_event_get_scroll_deltas ((GdkEvent *) event, &dx, &dy))
+    {
+      GtkAllocation allocation;
+
+      gtk_widget_get_allocation (GTK_WIDGET (range), &allocation);
+
+      if (gtk_orientable_get_orientation (GTK_ORIENTABLE (range)) == GTK_ORIENTATION_HORIZONTAL)
+        {
+          if (GTK_IS_SCROLLBAR (range) && adj->page_size > 0)
+            delta = dx * adj->page_size / allocation.width;
+          else
+            delta = dx * (adj->upper - adj->lower) / allocation.width;
+        }
+      else
+        {
+          if (GTK_IS_SCROLLBAR (range) && adj->page_size > 0)
+            delta = dy * adj->page_size / allocation.height;
+          else
+            delta = dy * (adj->upper - adj->lower) / allocation.height;
+        }
+    }
   else
-    delta = adj->step_increment * 2;
-  
-  if (direction == GDK_SCROLL_UP ||
-      direction == GDK_SCROLL_LEFT)
-    delta = - delta;
-  
+    {
+      if (GTK_IS_SCROLLBAR (range))
+        delta = pow (adj->page_size, 2.0 / 3.0);
+      else
+        delta = adj->step_increment * 2;
+
+      if (event->direction == GDK_SCROLL_UP ||
+          event->direction == GDK_SCROLL_LEFT)
+        delta = - delta;
+    }
+
   if (range->inverted)
     delta = - delta;
 
   return delta;
 }
-      
+
 static gboolean
 gtk_range_scroll_event (GtkWidget      *widget,
 			GdkEventScroll *event)
@@ -2603,7 +2628,7 @@ gtk_range_scroll_event (GtkWidget      *widget,
       gdouble delta;
       gboolean handled;
 
-      delta = _gtk_range_get_wheel_delta (range, event->direction);
+      delta = _gtk_range_get_wheel_delta (range, event);
 
       g_signal_emit (range, signals[CHANGE_VALUE], 0,
                      GTK_SCROLL_JUMP, adj->value + delta,

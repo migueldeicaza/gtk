@@ -10852,6 +10852,9 @@ proxy_button_event (GdkEvent *source_event,
       event->scroll.y_root = source_event->scroll.y_root;
       event->scroll.state = state;
       event->scroll.device = source_event->scroll.device;
+      event->scroll.has_deltas = source_event->scroll.has_deltas;
+      event->scroll.delta_x = source_event->scroll.delta_x;
+      event->scroll.delta_y = source_event->scroll.delta_y;
       return TRUE;
 
     default:

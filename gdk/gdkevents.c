@@ -392,6 +392,8 @@ gdk_event_new (GdkEventType type)
       new_event->scroll.y = 0.;
       new_event->scroll.x_root = 0.;
       new_event->scroll.y_root = 0.;
+      new_event->scroll.delta_x = 0.;
+      new_event->scroll.delta_y = 0.;
       break;
     case GDK_ENTER_NOTIFY:
     case GDK_LEAVE_NOTIFY:
@@ -841,6 +843,36 @@ gdk_event_get_root_coords (const GdkEvent *event,
     *x_root = x;
   if (y_root)
     *y_root = y;
+
+  return fetched;
+}
+
+gboolean
+gdk_event_get_scroll_deltas (const GdkEvent *event,
+                             gdouble        *delta_x,
+                             gdouble        *delta_y)
+{
+  gboolean fetched = TRUE;
+  gdouble dx = 0.0;
+  gdouble dy = 0.0;
+
+  switch (event->type)
+    {
+    case GDK_SCROLL:
+      fetched = event->scroll.has_deltas;
+      dx = event->scroll.delta_x;
+      dy = event->scroll.delta_y;
+      break;
+    default:
+      fetched = FALSE;
+      break;
+    }
+
+  if (delta_x)
+    *delta_x = dx;
+
+  if (delta_y)
+    *delta_y = dy;
 
   return fetched;
 }

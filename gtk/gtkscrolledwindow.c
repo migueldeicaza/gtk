@@ -1565,31 +1565,77 @@ static gboolean
 gtk_scrolled_window_scroll_event (GtkWidget      *widget,
 				  GdkEventScroll *event)
 {
-  GtkWidget *range;
+  GtkScrolledWindow *scrolled_window = GTK_SCROLLED_WINDOW (widget);
+  gboolean handled = FALSE;
+  gdouble delta_x;
+  gdouble delta_y;
 
   g_return_val_if_fail (GTK_IS_SCROLLED_WINDOW (widget), FALSE);
   g_return_val_if_fail (event != NULL, FALSE);  
 
-  if (event->direction == GDK_SCROLL_UP || event->direction == GDK_SCROLL_DOWN)
-    range = GTK_SCROLLED_WINDOW (widget)->vscrollbar;
-  else
-    range = GTK_SCROLLED_WINDOW (widget)->hscrollbar;
-
-  if (range && gtk_widget_get_visible (range))
+  if (gdk_event_get_scroll_deltas ((GdkEvent *) event, &delta_x, &delta_y))
     {
-      GtkAdjustment *adj = GTK_RANGE (range)->adjustment;
-      gdouble delta, new_value;
+      if (delta_x != 0.0 && scrolled_window->hscrollbar &&
+          gtk_widget_get_visible (scrolled_window->hscrollbar))
+        {
+          GtkAdjustment *adj;
+          gdouble new_value;
 
-      delta = _gtk_range_get_wheel_delta (GTK_RANGE (range), event->direction);
+          adj = gtk_range_get_adjustment (GTK_RANGE (scrolled_window->hscrollbar));
 
-      new_value = CLAMP (adj->value + delta, adj->lower, adj->upper - adj->page_size);
-      
-      gtk_adjustment_set_value (adj, new_value);
+          new_value = CLAMP (gtk_adjustment_get_value (adj) + delta_x,
+                             gtk_adjustment_get_lower (adj),
+                             gtk_adjustment_get_upper (adj) -
+                             gtk_adjustment_get_page_size (adj));
 
-      return TRUE;
+          gtk_adjustment_set_value (adj, new_value);
+
+          handled = TRUE;
+        }
+
+      if (delta_y != 0.0 && scrolled_window->vscrollbar &&
+          gtk_widget_get_visible (scrolled_window->vscrollbar))
+        {
+          GtkAdjustment *adj;
+          gdouble new_value;
+
+          adj = gtk_range_get_adjustment (GTK_RANGE (scrolled_window->vscrollbar));
+
+          new_value = CLAMP (gtk_adjustment_get_value (adj) + delta_y,
+                             gtk_adjustment_get_lower (adj),
+                             gtk_adjustment_get_upper (adj) -
+                             gtk_adjustment_get_page_size (adj));
+
+          gtk_adjustment_set_value (adj, new_value);
+
+          handled = TRUE;
+        }
+    }
+  else
+    {
+      GtkWidget *range;
+
+      if (event->direction == GDK_SCROLL_UP || event->direction == GDK_SCROLL_DOWN)
+        range = scrolled_window->vscrollbar;
+      else
+        range = scrolled_window->hscrollbar;
+
+      if (range && gtk_widget_get_visible (range))
+        {
+          GtkAdjustment *adj = GTK_RANGE (range)->adjustment;
+          gdouble delta, new_value;
+
+          delta = _gtk_range_get_wheel_delta (GTK_RANGE (range), event);
+
+          new_value = CLAMP (adj->value + delta, adj->lower, adj->upper - adj->page_size);
+
+          gtk_adjustment_set_value (adj, new_value);
+
+          handled = TRUE;
+        }
     }
 
-  return FALSE;
+  return handled;
 }
 
 static gboolean
