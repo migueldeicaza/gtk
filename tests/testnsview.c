@@ -45,6 +45,7 @@ main (gint   argc,
   GtkWidget *vbox;
   GtkWidget *toolbar;
   GtkToolItem *item;
+  GtkWidget *notebook;
   WebView *webview;
   NSRect web_rect = { { 0.0, 0.0 }, { 100.0, 100.0 } };
   NSURL *url;
@@ -86,6 +87,10 @@ main (gint   argc,
                     G_CALLBACK (forward_clicked),
                     webview);
 
+  notebook = gtk_notebook_new ();
+  gtk_box_pack_end (GTK_BOX (vbox), notebook, TRUE, TRUE, 0);
+  gtk_widget_show (notebook);
+
   [webview initWithFrame:web_rect
                frameName:@"foo"
                groupName:@"bar"];
@@ -97,10 +102,22 @@ main (gint   argc,
 
   ns_view = gtk_ns_view_new ((NSView *) webview);
   gtk_widget_set_size_request (ns_view, 300, 200);
+#if 0
   gtk_box_pack_end (GTK_BOX (vbox), ns_view, TRUE, TRUE, 0);
+#else
+  gtk_notebook_append_page (GTK_NOTEBOOK (notebook), ns_view,
+                            gtk_label_new ("WebView"));
+#endif
   gtk_widget_show (ns_view);
 
   [webview release];
+
+  {
+    GtkWidget *useless = gtk_label_new ("Useless Label");
+    gtk_notebook_append_page (GTK_NOTEBOOK (notebook), useless,
+                              gtk_label_new ("Useless"));
+    gtk_widget_show (useless);
+  }
 
   {
     GtkWidget *button;
