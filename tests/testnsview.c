@@ -149,7 +149,8 @@ main (gint   argc,
     NSTextField *text_field;
 
     sw = gtk_scrolled_window_new (NULL, NULL);
-    gtk_widget_set_size_request (sw, -1, 100);
+    gtk_widget_set_size_request (sw, -1, 130);
+    gtk_container_set_border_width (GTK_CONTAINER (sw), 20);
     gtk_box_pack_start (GTK_BOX (vbox), sw, FALSE, FALSE, 0);
     gtk_widget_show (sw);
 

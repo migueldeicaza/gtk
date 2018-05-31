@@ -160,6 +160,7 @@ gtk_ns_view_init (GtkNSView *ns_view)
 
   if (viewport)
     {
+      GdkWindow *window;
       CGContextRef cg_context = [[NSGraphicsContext currentContext] graphicsPort];
       GtkAllocation viewport_allocation;
       CGRect rect;
@@ -169,6 +170,36 @@ gtk_ns_view_init (GtkNSView *ns_view)
 #endif
 
       gtk_widget_get_allocation (viewport, &viewport_allocation);
+
+#if 0
+      g_printerr ("viewport allocation: %d, %d (%d x %x)\n",
+                  viewport_allocation.x,
+                  viewport_allocation.y,
+                  viewport_allocation.width,
+                  viewport_allocation.height);
+#endif
+
+      /* evil: don't clip to the viewport's width/height but to that
+       * of its parent window, because we know we hacked an
+       * overshoot_window into GtkScrolledWindow and need to restrict
+       * rendering in its area
+       */
+      window = gtk_widget_get_parent_window (viewport);
+
+      viewport_allocation.width = gdk_window_get_width (window);
+      viewport_allocation.height = gdk_window_get_height (window);
+
+#if 0
+      {
+        gint x, y;
+
+        gdk_window_get_position (window, &x, &y);
+        g_printerr ("viewport parent window at %d, %d (%x x %x)\n",
+                    x, y,
+                    gdk_window_get_width (window),
+                    gdk_window_get_height (window));
+      }
+#endif
 
       if (gtk_viewport_get_shadow_type (GTK_VIEWPORT (viewport)) != GTK_SHADOW_NONE)
         {
