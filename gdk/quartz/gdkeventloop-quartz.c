@@ -713,6 +713,23 @@ static GSourceFuncs event_funcs = {
  *********             Our Poll Function            *********
  ************************************************************/
 
+static inline void
+ensure_finish_launching_called (void)
+{
+  static volatile gsize finish_launched_called = 0;
+
+  if (g_once_init_enter (&finish_launched_called))
+    {
+      /* This call finished application start up and enables for example
+       * accessibility support. This function is called from poll_func
+       * and an autorelease pool is set up at that point.
+       */
+      [NSApp finishLaunching];
+
+      g_once_init_leave (&finish_launched_called, TRUE);
+    }
+}
+
 static gint
 poll_func (GPollFD *ufds,
 	   guint    nfds,
@@ -734,6 +751,9 @@ poll_func (GPollFD *ufds,
    */
   static GPollFD *current_ufds = NULL;
   static int current_nfds = 0;
+
+  /* This is performed *once* before we poll Cocoa for the first event. */
+  ensure_finish_launching_called ();
 
   current_ufds = ufds;
   current_nfds = nfds;
