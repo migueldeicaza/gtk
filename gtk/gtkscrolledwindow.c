@@ -1926,6 +1926,7 @@ gtk_scrolled_window_size_allocate (GtkWidget     *widget,
   GtkAllocation old_allocation;
   gboolean scrollbars_within_bevel;
   gint scrollbar_spacing;
+  gint overshoot_x, overshoot_y;
 
   g_return_if_fail (GTK_IS_SCROLLED_WINDOW (widget));
   g_return_if_fail (allocation != NULL);
@@ -1935,6 +1936,10 @@ gtk_scrolled_window_size_allocate (GtkWidget     *widget,
   scrolled_window = GTK_SCROLLED_WINDOW (widget);
   priv = GTK_SCROLLED_WINDOW_GET_PRIVATE (scrolled_window);
   bin = GTK_BIN (scrolled_window);
+
+  /* Save overshoot state from before resizing the child. */
+  _gtk_scrolled_window_get_overshoot (scrolled_window,
+                                      &overshoot_x, &overshoot_y);
 
   scrollbar_spacing = _gtk_scrolled_window_get_scrollbar_spacing (scrolled_window);
   gtk_widget_style_get (widget, "scrollbars-within-bevel", &scrollbars_within_bevel, NULL);
@@ -2094,6 +2099,29 @@ gtk_scrolled_window_size_allocate (GtkWidget     *widget,
     }
   else if (gtk_widget_get_visible (scrolled_window->vscrollbar))
     gtk_widget_hide (scrolled_window->vscrollbar);
+
+  /* We have to reclamp the unclamped adjustments, otherwise the content
+   * widget might be stuck in overshot state after resizing.
+   */
+  if (overshoot_x == 0.0)
+    {
+      GtkAdjustment *hadj;
+      hadj = gtk_range_get_adjustment (GTK_RANGE (scrolled_window->hscrollbar));
+      priv->unclamped_hadj_value = CLAMP (priv->unclamped_hadj_value,
+                                          gtk_adjustment_get_lower (hadj),
+                                          gtk_adjustment_get_upper (hadj) -
+                                          gtk_adjustment_get_page_size (hadj));
+    }
+
+  if (overshoot_y == 0.0)
+    {
+      GtkAdjustment *vadj;
+      vadj = gtk_range_get_adjustment (GTK_RANGE (scrolled_window->vscrollbar));
+      priv->unclamped_vadj_value = CLAMP (priv->unclamped_vadj_value,
+                                          gtk_adjustment_get_lower (vadj),
+                                          gtk_adjustment_get_upper (vadj) -
+                                          gtk_adjustment_get_page_size (vadj));
+    }
 
   /* need to update the overlay scrollbars only if the allocation has
    * actually changed, not if only the content changed
