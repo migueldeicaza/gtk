@@ -726,9 +726,11 @@ gtk_ns_view_key_press (GtkWidget   *widget,
       NSWindow *ns_window = [ns_view->priv->view window];
       NSResponder *responder = [ns_window firstResponder];
 
+      gint command_mask = gdk_quartz_get_fix_modifiers () ? GDK_MOD2_MASK : GDK_MOD1_MASK;
+
       if ([responder isKindOfClass: [NSTextView class]] &&
           (event->state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK |
-                           GDK_MOD1_MASK | GDK_MOD2_MASK)) == GDK_MOD2_MASK)
+                           GDK_MOD1_MASK | GDK_MOD2_MASK)) == command_mask)
         {
           NSTextView *text_view = (NSTextView *) responder;
           NSRange range = [text_view selectedRange];
