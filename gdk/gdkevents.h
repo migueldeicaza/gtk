@@ -349,6 +349,7 @@ struct _GdkEventScroll
   gdouble delta_x;
   gdouble delta_y;
   GdkEventScrollPhase phase;
+  GdkEventScrollPhase momentum_phase;
 };
 
 struct _GdkEventKey

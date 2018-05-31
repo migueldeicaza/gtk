@@ -63,6 +63,7 @@ static GdkWindow *find_toplevel_under_pointer   (GdkDisplay *display,
 - (CGFloat) scrollingDeltaX;
 - (CGFloat) scrollingDeltaY;
 - (int) phase;
+- (int) momentumPhase;
 @end
 
 
@@ -1013,6 +1014,7 @@ fill_scroll_event (GdkWindow          *window,
                    gdouble             delta_x,
                    gdouble             delta_y,
                    GdkEventScrollPhase phase,
+                   GdkEventScrollPhase momentum_phase,
                    GdkScrollDirection  direction)
 {
   GdkWindowObject *private;
@@ -1036,6 +1038,7 @@ fill_scroll_event (GdkWindow          *window,
   event->scroll.delta_x = delta_x;
   event->scroll.delta_y = delta_y;
   event->scroll.phase = phase;
+  event->scroll.momentum_phase = momentum_phase;
 }
 
 static void
@@ -1552,7 +1555,7 @@ gdk_event_translate (GdkEvent *event,
 	if (gdk_quartz_osx_version() >= GDK_OSX_LION &&
 	    [(id <PreciseDeltas>) nsevent hasPreciseScrollingDeltas])
 	  {
-            GdkEventScrollPhase phase;
+            GdkEventScrollPhase phase, momentum_phase;
 	    dx = [(id <PreciseDeltas>) nsevent scrollingDeltaX];
 	    dy = [(id <PreciseDeltas>) nsevent scrollingDeltaY];
 
@@ -1572,9 +1575,10 @@ gdk_event_translate (GdkEvent *event,
               }
 
             phase = gdk_event_scroll_phase_from_ns_event_phase ([(id <PreciseDeltas>) nsevent phase]);
+            momentum_phase = gdk_event_scroll_phase_from_ns_event_phase ([(id <PreciseDeltas>) nsevent momentumPhase]);
 
             fill_scroll_event (window, event, nsevent, x, y, x_root, y_root,
-                               TRUE, -dx, -dy, phase, direction);
+                               TRUE, -dx, -dy, phase, momentum_phase, direction);
 	  }
 	else
 	  {
@@ -1589,7 +1593,9 @@ gdk_event_translate (GdkEvent *event,
                   direction = GDK_SCROLL_UP;
 
                 fill_scroll_event (window, event, nsevent, x, y, x_root, y_root,
-                                   FALSE, 0.0, fabs (dy), GDK_EVENT_SCROLL_PHASE_NONE,
+                                   FALSE, 0.0, fabs (dy),
+                                   GDK_EVENT_SCROLL_PHASE_NONE,
+                                   GDK_EVENT_SCROLL_PHASE_NONE,
                                    direction);
               }
             else if (dx != 0.0)
@@ -1600,7 +1606,9 @@ gdk_event_translate (GdkEvent *event,
                   direction = GDK_SCROLL_LEFT;
 
                 fill_scroll_event (window, event, nsevent, x, y, x_root, y_root,
-                                   FALSE, fabs (dx), 0.0, GDK_EVENT_SCROLL_PHASE_NONE,
+                                   FALSE, fabs (dx), 0.0,
+                                   GDK_EVENT_SCROLL_PHASE_NONE,
+                                   GDK_EVENT_SCROLL_PHASE_NONE,
                                    direction);
               }
           }

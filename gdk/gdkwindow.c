@@ -10950,6 +10950,7 @@ proxy_button_event (GdkEvent *source_event,
       event->scroll.delta_x = source_event->scroll.delta_x;
       event->scroll.delta_y = source_event->scroll.delta_y;
       event->scroll.phase = source_event->scroll.phase;
+      event->scroll.momentum_phase = source_event->scroll.momentum_phase;
       return TRUE;
 
     default:
