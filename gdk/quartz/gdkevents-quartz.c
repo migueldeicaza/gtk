@@ -852,7 +852,7 @@ find_window_for_ns_event (NSEvent *nsevent,
                       {
                         g_warning ("grab_toplevel == NULL");
                       }
-                    else
+                    else if (!gdk_window_is_destroyed (grab_toplevel))
                       {
                         get_window_point_from_screen_point (grab_toplevel,
                                                             screen_point, x, y);
