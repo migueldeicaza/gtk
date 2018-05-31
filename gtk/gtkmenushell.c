@@ -521,6 +521,9 @@ gtk_menu_shell_real_insert (GtkMenuShell *menu_shell,
   menu_shell->children = g_list_insert (menu_shell->children, child, position);
 
   gtk_widget_set_parent (child, GTK_WIDGET (menu_shell));
+
+  // Emit the container::add signal so the accessibility system can pick it up
+  g_signal_emit_by_name (G_OBJECT (menu_shell), "add", child);
 }
 
 void
@@ -1039,6 +1042,10 @@ static void
 gtk_menu_shell_add (GtkContainer *container,
 		    GtkWidget    *widget)
 {
+  if (widget->parent == container) {
+    return;
+  }
+
   gtk_menu_shell_append (GTK_MENU_SHELL (container), widget);
 }
 
