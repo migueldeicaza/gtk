@@ -1503,7 +1503,8 @@ void
 gtk_main_do_event (GdkEvent *event)
 {
   GtkWidget *event_widget;
-  GtkWidget *grab_widget;
+  GtkWidget *grab_widget = NULL;
+  GtkWidget *topmost_widget = NULL;
   GtkWindowGroup *window_group;
   GdkEvent *rewritten_event = NULL;
   GList *tmp_list;
@@ -1565,7 +1566,14 @@ gtk_main_do_event (GdkEvent *event)
   if (window_group->grabs)
     {
       grab_widget = window_group->grabs->data;
-      
+
+      /* Find out the topmost widget where captured event propagation
+       * should start, which is the widget holding the GTK+ grab
+       * if any, otherwise it's left NULL and events are emitted
+       * from the toplevel (or topmost parentless parent).
+       */
+      topmost_widget = grab_widget;
+
       /* If the grab widget is an ancestor of the event widget
        *  then we send the event to the original event widget.
        *  This is the key to implementing modality.
@@ -1649,14 +1657,16 @@ gtk_main_do_event (GdkEvent *event)
     case GDK_WINDOW_STATE:
     case GDK_GRAB_BROKEN:
     case GDK_DAMAGE:
-      gtk_widget_event (event_widget, event);
+      if (!_gtk_widget_captured_event (event_widget, event))
+        gtk_widget_event (event_widget, event);
       break;
 
     case GDK_SCROLL:
     case GDK_BUTTON_PRESS:
     case GDK_2BUTTON_PRESS:
     case GDK_3BUTTON_PRESS:
-      gtk_propagate_event (grab_widget, event);
+      if (!_gtk_propagate_captured_event (grab_widget, event, topmost_widget))
+        gtk_propagate_event (grab_widget, event);
       break;
 
     case GDK_KEY_PRESS:
@@ -1695,19 +1705,22 @@ gtk_main_do_event (GdkEvent *event)
     case GDK_BUTTON_RELEASE:
     case GDK_PROXIMITY_IN:
     case GDK_PROXIMITY_OUT:
-      gtk_propagate_event (grab_widget, event);
+      if (!_gtk_propagate_captured_event (grab_widget, event, topmost_widget))
+        gtk_propagate_event (grab_widget, event);
       break;
       
     case GDK_ENTER_NOTIFY:
       GTK_PRIVATE_SET_FLAG (event_widget, GTK_HAS_POINTER);
       _gtk_widget_set_pointer_window (event_widget, event->any.window);
-      if (gtk_widget_is_sensitive (grab_widget))
+      if (gtk_widget_is_sensitive (grab_widget) &&
+          !_gtk_propagate_captured_event (grab_widget, event, topmost_widget))
 	gtk_widget_event (grab_widget, event);
       break;
       
     case GDK_LEAVE_NOTIFY:
       GTK_PRIVATE_UNSET_FLAG (event_widget, GTK_HAS_POINTER);
-      if (gtk_widget_is_sensitive (grab_widget))
+      if (gtk_widget_is_sensitive (grab_widget) &&
+          !_gtk_propagate_captured_event (grab_widget, event, topmost_widget))
 	gtk_widget_event (grab_widget, event);
       break;
       
@@ -2413,44 +2426,96 @@ gtk_quit_invoke_function (GtkQuitFunction *quitf)
     }
 }
 
-/**
- * gtk_propagate_event:
- * @widget: a #GtkWidget
- * @event: an event
- *
- * Sends an event to a widget, propagating the event to parent widgets
- * if the event remains unhandled. Events received by GTK+ from GDK
- * normally begin in gtk_main_do_event(). Depending on the type of
- * event, existence of modal dialogs, grabs, etc., the event may be
- * propagated; if so, this function is used. gtk_propagate_event()
- * calls gtk_widget_event() on each widget it decides to send the
- * event to.  So gtk_widget_event() is the lowest-level function; it
- * simply emits the "event" and possibly an event-specific signal on a
- * widget.  gtk_propagate_event() is a bit higher-level, and
- * gtk_main_do_event() is the highest level.
- *
- * All that said, you most likely don't want to use any of these
- * functions; synthesizing events is rarely needed. Consider asking on
- * the mailing list for better ways to achieve your goals. For
- * example, use gdk_window_invalidate_rect() or
- * gtk_widget_queue_draw() instead of making up expose events.
- * 
- **/
-void
-gtk_propagate_event (GtkWidget *widget,
-		     GdkEvent  *event)
+static gboolean
+propagate_event_up (GtkWidget *widget,
+                    GdkEvent  *event,
+                    GtkWidget *topmost)
 {
-  gint handled_event;
-  
-  g_return_if_fail (GTK_IS_WIDGET (widget));
-  g_return_if_fail (event != NULL);
-  
-  handled_event = FALSE;
+  gboolean handled_event = FALSE;
 
-  g_object_ref (widget);
-      
-  if ((event->type == GDK_KEY_PRESS) ||
-      (event->type == GDK_KEY_RELEASE))
+  /* Propagate event up the widget tree so that
+   * parents can see the button and motion
+   * events of the children.
+   */
+  while (TRUE)
+    {
+      GtkWidget *tmp;
+
+      g_object_ref (widget);
+
+      /* Scroll events are special cased here because it
+       * feels wrong when scrolling a GtkViewport, say,
+       * to have children of the viewport eat the scroll
+       * event
+       */
+      if (!gtk_widget_is_sensitive (widget))
+        handled_event = event->type != GDK_SCROLL;
+      else
+        handled_event = gtk_widget_event (widget, event);
+
+      tmp = gtk_widget_get_parent (widget);
+      g_object_unref (widget);
+
+      if (widget == topmost)
+        break;
+
+      widget = tmp;
+
+      if (handled_event || !widget)
+        break;
+    }
+
+  return handled_event;
+}
+
+static gboolean
+propagate_event_down (GtkWidget *widget,
+                      GdkEvent  *event,
+                      GtkWidget *topmost)
+{
+  gint handled_event = FALSE;
+  GList *widgets = NULL;
+  GList *l;
+
+  widgets = g_list_prepend (widgets, g_object_ref (widget));
+  while (widget && widget != topmost)
+    {
+      widget = gtk_widget_get_parent (widget);
+      if (!widget)
+        break;
+
+      widgets = g_list_prepend (widgets, g_object_ref (widget));
+
+      if (widget == topmost)
+        break;
+    }
+
+  for (l = widgets; l && !handled_event; l = g_list_next (l))
+    {
+      widget = (GtkWidget *)l->data;
+
+      if (!gtk_widget_is_sensitive (widget))
+        handled_event = TRUE;
+      else
+        handled_event = _gtk_widget_captured_event (widget, event);
+    }
+  g_list_free_full (widgets, (GDestroyNotify)g_object_unref);
+
+  return handled_event;
+}
+
+static gboolean
+propagate_event (GtkWidget *widget,
+                 GdkEvent  *event,
+                 gboolean   captured,
+                 GtkWidget *topmost)
+{
+  gboolean handled_event = FALSE;
+  gboolean (* propagate_func) (GtkWidget *widget, GdkEvent  *event);
+
+  propagate_func = captured ? _gtk_widget_captured_event : gtk_widget_event;
+
+  if (event->type == GDK_KEY_PRESS || event->type == GDK_KEY_RELEASE)
     {
       /* Only send key events within Window widgets to the Window
        *  The Window widget will in turn pass the
@@ -2461,60 +2526,75 @@ gtk_propagate_event (GtkWidget *widget,
 
       window = gtk_widget_get_toplevel (widget);
       if (GTK_IS_WINDOW (window))
-	{
-	  /* If there is a grab within the window, give the grab widget
-	   * a first crack at the key event
-	   */
-	  if (widget != window && gtk_widget_has_grab (widget))
-	    handled_event = gtk_widget_event (widget, event);
-	  
-	  if (!handled_event)
-	    {
-	      window = gtk_widget_get_toplevel (widget);
-	      if (GTK_IS_WINDOW (window))
-		{
-		  if (gtk_widget_is_sensitive (window))
-		    gtk_widget_event (window, event);
-		}
-	    }
-		  
-	  handled_event = TRUE; /* don't send to widget */
-	}
-    }
-  
-  /* Other events get propagated up the widget tree
-   *  so that parents can see the button and motion
-   *  events of the children.
-   */
-  if (!handled_event)
-    {
-      while (TRUE)
-	{
-	  GtkWidget *tmp;
+        {
+          g_object_ref (widget);
+          /* If there is a grab within the window, give the grab widget
+           * a first crack at the key event
+           */
+          if (widget != window && gtk_widget_has_grab (widget))
+            handled_event = propagate_func (widget, event);
 
-	  /* Scroll events are special cased here because it
-	   * feels wrong when scrolling a GtkViewport, say,
-	   * to have children of the viewport eat the scroll
-	   * event
-	   */
-	  if (!gtk_widget_is_sensitive (widget))
-	    handled_event = event->type != GDK_SCROLL;
-	  else
-	    handled_event = gtk_widget_event (widget, event);
-	      
-	  tmp = widget->parent;
-	  g_object_unref (widget);
+          if (!handled_event)
+            {
+              window = gtk_widget_get_toplevel (widget);
+              if (GTK_IS_WINDOW (window))
+                {
+                  if (gtk_widget_is_sensitive (window))
+                    handled_event = propagate_func (window, event);
+                }
+            }
 
-	  widget = tmp;
-	  
-	  if (!handled_event && widget)
-	    g_object_ref (widget);
-	  else
-	    break;
-	}
+          g_object_unref (widget);
+          return handled_event;
+        }
     }
-  else
-    g_object_unref (widget);
+
+  /* Other events get propagated up/down the widget tree */
+  return captured ?
+    propagate_event_down (widget, event, topmost) :
+    propagate_event_up (widget, event, topmost);
+}
+
+/**
+ * gtk_propagate_event:
+ * @widget: a #GtkWidget
+ * @event: an event
+ *
+ * Sends an event to a widget, propagating the event to parent widgets
+ * if the event remains unhandled.
+ *
+ * Events received by GTK+ from GDK normally begin in gtk_main_do_event().
+ * Depending on the type of event, existence of modal dialogs, grabs, etc.,
+ * the event may be propagated; if so, this function is used.
+ *
+ * gtk_propagate_event() calls gtk_widget_event() on each widget it
+ * decides to send the event to. So gtk_widget_event() is the lowest-level
+ * function; it simply emits the #GtkWidget::event and possibly an
+ * event-specific signal on a widget. gtk_propagate_event() is a bit
+ * higher-level, and gtk_main_do_event() is the highest level.
+ *
+ * All that said, you most likely don't want to use any of these
+ * functions; synthesizing events is rarely needed. There are almost
+ * certainly better ways to achieve your goals. For example, use
+ * gdk_window_invalidate_rect() or gtk_widget_queue_draw() instead
+ * of making up expose events.
+ */
+void
+gtk_propagate_event (GtkWidget *widget,
+                     GdkEvent  *event)
+{
+  g_return_if_fail (GTK_IS_WIDGET (widget));
+  g_return_if_fail (event != NULL);
+
+  propagate_event (widget, event, FALSE, NULL);
+}
+
+gboolean
+_gtk_propagate_captured_event (GtkWidget *widget,
+                               GdkEvent  *event,
+                               GtkWidget *topmost)
+{
+  return propagate_event (widget, event, TRUE, topmost);
 }
 
 #if 0

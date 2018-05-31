@@ -351,6 +351,7 @@ static void gtk_widget_set_usize_internal (GtkWidget *widget,
 					   gint       height);
 static void gtk_widget_get_draw_rectangle (GtkWidget    *widget,
 					   GdkRectangle *rect);
+static gboolean event_window_is_still_viewable (GdkEvent *event);
 
 
 /* --- variables --- */
@@ -4807,6 +4808,58 @@ gtk_widget_event (GtkWidget *widget,
   return gtk_widget_event_internal (widget, event);
 }
 
+void
+_gtk_widget_set_captured_event_handler (GtkWidget               *widget,
+                                        GtkCapturedEventHandler  callback)
+{
+  g_object_set_data (G_OBJECT (widget), "captured-event-handler", callback);
+}
+
+gboolean
+_gtk_widget_captured_event (GtkWidget *widget,
+                            GdkEvent  *event)
+{
+  gboolean return_val = FALSE;
+  GtkCapturedEventHandler handler;
+
+  g_return_val_if_fail (GTK_IS_WIDGET (widget), TRUE);
+  g_return_val_if_fail (WIDGET_REALIZED_FOR_EVENT (widget, event), TRUE);
+
+  if (event->type == GDK_EXPOSE)
+    {
+      g_warning ("Events of type GDK_EXPOSE cannot be synthesized. To get "
+		 "the same effect, call gdk_window_invalidate_rect/region(), "
+		 "followed by gdk_window_process_updates().");
+      return TRUE;
+    }
+
+  if (!event_window_is_still_viewable (event))
+    return TRUE;
+
+  handler = g_object_get_data (G_OBJECT (widget), "captured-event-handler");
+  if (!handler)
+    return FALSE;
+
+  g_object_ref (widget);
+
+  return_val = handler (widget, event);
+  return_val |= !WIDGET_REALIZED_FOR_EVENT (widget, event);
+
+  /* The widget that was originally to receive the event
+   * handles motion hints, but the capturing widget might
+   * not, so ensure we get further motion events.
+   */
+  if (return_val &&
+      event->type == GDK_MOTION_NOTIFY &&
+      event->motion.is_hint &&
+      (gdk_window_get_events (event->any.window) &
+       GDK_POINTER_MOTION_HINT_MASK) != 0)
+    gdk_event_request_motions (&event->motion);
+
+  g_object_unref (widget);
+
+  return return_val;
+}
 
 /**
  * gtk_widget_send_expose:

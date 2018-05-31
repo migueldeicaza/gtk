@@ -152,6 +152,20 @@ gboolean _gtk_translate_keyboard_accel_state     (GdkKeymap       *keymap,
                                                   GdkModifierType *consumed_modifiers);
 
 
+gboolean        _gtk_propagate_captured_event  (GtkWidget       *widget,
+                                                GdkEvent        *event,
+                                                GtkWidget       *topmost);
+
+typedef gboolean (*GtkCapturedEventHandler) (GtkWidget *widget, GdkEvent *event);
+
+void              _gtk_widget_set_captured_event_handler (GtkWidget               *widget,
+                                                          GtkCapturedEventHandler  handler);
+
+gboolean          _gtk_widget_captured_event               (GtkWidget *widget,
+                                                            GdkEvent  *event);
+
+
+
 G_END_DECLS
 
 #endif /* __GTK_PRIVATE_H__ */
