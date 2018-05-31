@@ -738,6 +738,11 @@ gtk_ns_view_key_press (GtkWidget   *widget,
 
           switch (event->keyval)
             {
+            case GDK_KEY_z: /* undo */
+              if ([[text_view undoManager] canUndo])
+                [[text_view undoManager] undo];
+              return TRUE;
+
             case GDK_KEY_c: /* copy */
               if (has_selection)
                 [text_view copy: text_view];
