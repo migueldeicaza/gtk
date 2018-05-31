@@ -1310,11 +1310,14 @@ static gboolean
 gtk_scrolled_window_expose (GtkWidget      *widget,
 			    GdkEventExpose *event)
 {
+  GtkScrolledWindowPrivate *priv = GTK_SCROLLED_WINDOW_GET_PRIVATE (widget);
+
   if (gtk_widget_is_drawable (widget))
     {
-      gtk_scrolled_window_paint (widget, &event->area);
-
-      GTK_WIDGET_CLASS (gtk_scrolled_window_parent_class)->expose_event (widget, event);
+      if (event->window == priv->overshoot_window)
+        GTK_WIDGET_CLASS (gtk_scrolled_window_parent_class)->expose_event (widget, event);
+      else
+        gtk_scrolled_window_paint (widget, &event->area);
     }
 
   return FALSE;
