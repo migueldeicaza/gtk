@@ -139,6 +139,25 @@ gtk_ns_view_init (GtkNSView *ns_view)
   gtk_widget_set_has_window (GTK_WIDGET (ns_view), FALSE);
 }
 
+
+static void   gtk_ns_view_swizzle_draw_rect_recursive (NSView      *view,
+                                                       const gchar *associated_key,
+                                                       gpointer     associated_object);
+
+@implementation NSView (myDidAddSubview)
+- (void) myDidAddSubview:(NSView *)aView
+{
+  void *associated_object;
+
+  associated_object = objc_getAssociatedObject (self, "gtknsview");
+
+  if (associated_object)
+    gtk_ns_view_swizzle_draw_rect_recursive (aView, "gtknsview", associated_object);
+
+  [self myDidAddSubview:aView];
+}
+@end
+
 @implementation NSView (myDrawRect)
 - (void) myDrawRect: (NSRect) dirtyRect
 {
@@ -164,7 +183,8 @@ gtk_ns_view_init (GtkNSView *ns_view)
         }
     }
 
-  if (! ns_view)
+  if (! ns_view ||
+      ns_view->priv->view != [ns_view->priv->view ancestorSharedWithView: self])
     {
       [self myDrawRect: dirtyRect];
       return;
@@ -215,6 +235,18 @@ gtk_ns_view_init (GtkNSView *ns_view)
       rect.size.width = viewport_allocation.width;
       rect.size.height = viewport_allocation.height;
 
+      /*  need to translate rect if this is not the view itself but a subview  */
+      if (ns_view->priv->view != self)
+        {
+          NSRect offset = NSMakeRect (0, 0, 0, 0);
+
+          offset = [ns_view->priv->view convertRect: offset
+                                           fromView: self];
+
+          rect.origin.x -= offset.origin.x;
+          rect.origin.y -= offset.origin.y;
+        }
+
       CGContextClipToRect (cg_context, rect);
     }
 
@@ -231,9 +263,20 @@ gtk_ns_view_swizzle_draw_rect_recursive (NSView      *view,
 {
   Method original_drawRect;
   Method my_drawRect;
+  Method original_didAddSubview;
+  Method my_didAddSubview;
   NSArray *subviews;
   gint i;
 
+  /* This is a private method that disable automatic focus ring handling.
+   * It looks like automatic focus ring drawing is handled by a toplevel
+   * NSView, so it cannot be caught by our clipping. If we disable this
+   * automatic handling, the focus ring appears to be drawn locally and
+   * is affected by our clipping.
+   */
+  [view _setAutomaticFocusRingDisabled:YES];
+
+  /* Swizzle drawRect */
   original_drawRect = class_getInstanceMethod ([view class],
                                                @selector (drawRect:));
   my_drawRect = class_getInstanceMethod ([view class],
@@ -249,6 +292,24 @@ gtk_ns_view_swizzle_draw_rect_recursive (NSView      *view,
                            method_getImplementation (my_drawRect),
                            method_getTypeEncoding (my_drawRect));
     }
+
+  /* Swizzle didAddSubView */
+  original_didAddSubview = class_getInstanceMethod ([view class],
+                                                    @selector (didAddSubview:));
+  my_didAddSubview = class_getInstanceMethod ([view class],
+                                              @selector (myDidAddSubview:));
+
+  if (class_addMethod ([view class],
+                       @selector (myDidAddSubview:),
+                       method_getImplementation (original_didAddSubview),
+                       method_getTypeEncoding (original_didAddSubview)))
+    {
+      class_replaceMethod ([view class],
+                           @selector (didAddSubview:),
+                           method_getImplementation (my_didAddSubview),
+                           method_getTypeEncoding (my_didAddSubview));
+    }
+
 
   objc_setAssociatedObject (view, associated_key, (id) associated_object,
                             OBJC_ASSOCIATION_ASSIGN);
