@@ -1847,6 +1847,33 @@ gdk_event_translate (GdkEvent *event,
         NSView *tmp_view = [nswindow firstResponder];
         gboolean gtk_child = FALSE;
 
+        if (event_type == NSKeyDown && ([nsevent modifierFlags] & NSCommandKeyMask) != 0 && [[nsevent characters] characterAtIndex:0] == 'z')
+          {
+            if ([tmp_view respondsToSelector:@selector(undoManager)])
+              {
+                NSUndoManager *undo_manager = [tmp_view undoManager];
+
+                if (([nsevent modifierFlags] & NSShiftKeyMask) != 0)
+                  {
+                    if ([undo_manager canRedo])
+                      {
+                        [undo_manager redo];
+                        return_val = FALSE;
+                        break;
+                      }
+                  }
+                else
+                  {
+                    if ([undo_manager canUndo])
+                      {
+                        [undo_manager undo];
+                        return_val = FALSE;
+                        break;
+                      }
+                  }
+              }
+          }
+
         while (tmp_view != NULL)
           {
             if (tmp_view && [tmp_view respondsToSelector:@selector(isGtkView)])
