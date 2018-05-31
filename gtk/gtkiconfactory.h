@@ -177,19 +177,24 @@ void             gtk_icon_source_set_state_wildcarded     (GtkIconSource       *
                                                            gboolean             setting);
 void             gtk_icon_source_set_size_wildcarded      (GtkIconSource       *source,
                                                            gboolean             setting);
+void             gtk_icon_source_set_scale_wildcarded     (GtkIconSource       *source,
+                                                           gboolean             setting);
 gboolean         gtk_icon_source_get_size_wildcarded      (const GtkIconSource *source);
 gboolean         gtk_icon_source_get_state_wildcarded     (const GtkIconSource *source);
 gboolean         gtk_icon_source_get_direction_wildcarded (const GtkIconSource *source);
+gboolean         gtk_icon_source_get_scale_wildcarded     (const GtkIconSource *source);
 void             gtk_icon_source_set_direction            (GtkIconSource       *source,
                                                            GtkTextDirection     direction);
 void             gtk_icon_source_set_state                (GtkIconSource       *source,
                                                            GtkStateType         state);
 void             gtk_icon_source_set_size                 (GtkIconSource       *source,
                                                            GtkIconSize          size);
+void             gtk_icon_source_set_scale                (GtkIconSource       *source,
+                                                           gdouble              scale);
 GtkTextDirection gtk_icon_source_get_direction            (const GtkIconSource *source);
 GtkStateType     gtk_icon_source_get_state                (const GtkIconSource *source);
 GtkIconSize      gtk_icon_source_get_size                 (const GtkIconSource *source);
-
+gdouble          gtk_icon_source_get_scale                (const GtkIconSource *source);
 
 /* ignore this */
 void _gtk_icon_set_invalidate_caches (void);
