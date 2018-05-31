@@ -897,6 +897,12 @@ get_nsscreen_for_point (gint x, gint y)
   return screen;
 }
 
+gboolean
+gdk_window_supports_nsview_embedding ()
+{
+  return TRUE;
+}
+
 void
 _gdk_window_impl_new (GdkWindow     *window,
 		      GdkWindow     *real_parent,

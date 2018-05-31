@@ -724,6 +724,37 @@ _gdk_quartz_events_send_map_event (GdkWindow *window)
     }
 }
 
+static NSView *
+find_nsview_at_pos (GdkWindowImplQuartz *impl, gint x, gint y)
+{
+  NSView *view = impl->view;
+  guint n_subviews;
+  guint i;
+
+  n_subviews = [[view subviews] count];
+
+  for (i = 0; i < n_subviews; ++i)
+    {
+      NSView* sv = [[view subviews] objectAtIndex:i];
+      NSRect r = [sv frame];
+
+      if (sv == impl->layer_view)
+        continue;
+
+      if (r.origin.x <= x && r.origin.x + r.size.width >= x &&
+          r.origin.y <= y && r.origin.y + r.size.height >= y)
+        {
+          NSView* child = find_nsview_at_pos (impl, x - r.origin.x, y - r.origin.y);
+          if (child != NULL)
+            return child;
+          else
+            return sv;
+        }
+    }
+
+  return NULL;
+}
+
 static GdkWindow *
 find_toplevel_under_pointer (GdkDisplay *display,
                              NSPoint     screen_point,
@@ -890,34 +921,21 @@ find_window_for_ns_event (NSEvent *nsevent,
               {
                 GdkWindowObject *toplevel_private;
                 GdkWindowImplQuartz *toplevel_impl;
-                guint n_subviews;
-                guint i;
+                NSView *subview;
 
                 toplevel = toplevel_under_pointer;
 
                 toplevel_private = (GdkWindowObject *)toplevel;
                 toplevel_impl = (GdkWindowImplQuartz *)toplevel_private->impl;
 
-                n_subviews = [[toplevel_impl->view subviews] count];
+                subview = find_nsview_at_pos (toplevel_impl, *x, *y);
+                if (subview != NULL && ![subview isKindOfClass:[GdkQuartzView class]]) {
+                  g_signal_emit_by_name (toplevel, "native-child-event",
+                                         subview, nsevent);
 
-                for (i = 0; i < n_subviews; ++i)
-                  {
-                    NSView* sv = [[toplevel_impl->view subviews] objectAtIndex:i];
-                    NSRect r = [sv frame];
-
-                    if (sv == toplevel_impl->layer_view)
-                      continue;
-
-                    if (r.origin.x <= *x && r.origin.x + r.size.width >= *x &&
-                        r.origin.y <= *y && r.origin.y + r.size.height >= *y)
-                      {
-                        g_signal_emit_by_name (toplevel, "native-child-event",
-                                               sv, nsevent);
-
-                        /* event is within subview, forward back to Cocoa */
-                        return NULL;
-                      }
-                  }
+                  /* event is within subview, forward back to Cocoa */
+                  return NULL;
+                }
 
                 *x = x_tmp;
                 *y = y_tmp;
@@ -1686,6 +1704,11 @@ gdk_event_translate (GdkEvent *event,
       GdkWindowObject *private = (GdkWindowObject *)window;
       GdkWindowImplQuartz *impl = GDK_WINDOW_IMPL_QUARTZ (private->impl);
 
+      GdkQuartzWindow *nswindow = ((GdkWindowImplQuartz *)private->impl)->toplevel;
+      GdkQuartzView *nsview = ((GdkWindowImplQuartz *)private->impl)->view;
+
+      [nswindow makeFirstResponder:nsview];
+
       if (![NSApp isActive])
         {
           [NSApp activateIgnoringOtherApps:YES];
@@ -1817,6 +1840,15 @@ gdk_event_translate (GdkEvent *event,
     case NSFlagsChanged:
       {
         GdkEventType type;
+        GdkWindowObject *private = (GdkWindowObject *)window;
+        GdkQuartzWindow *nswindow = ((GdkWindowImplQuartz *)private->impl)->toplevel;
+        GdkQuartzView *nsview = ((GdkWindowImplQuartz *)private->impl)->view;
+
+        if (![[nswindow firstResponder] respondsToSelector:@selector(isGtkView)])
+          {
+            return_val = FALSE;
+            break;
+          }
 
         type = _gdk_quartz_keys_event_type (nsevent);
         if (type == GDK_NOTHING)

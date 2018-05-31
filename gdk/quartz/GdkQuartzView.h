@@ -47,5 +47,6 @@
 - (GdkWindow *)gdkWindow;
 - (NSTrackingRectTag)trackingRect;
 - (void)setNeedsInvalidateShadow: (BOOL)invalidate;
+- (void)mouseDown:(NSEvent *)theEvent;
 
 @end

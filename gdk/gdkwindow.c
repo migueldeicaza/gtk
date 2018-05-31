@@ -1468,6 +1468,8 @@ gdk_window_new (GdkWindow     *parent,
     private->parent->children = g_list_prepend (private->parent->children, window);
 
   native = _gdk_native_windows; /* Default */
+  if (attributes->type_hint == 100)
+      native = TRUE;
   if (private->parent->window_type == GDK_WINDOW_ROOT)
     native = TRUE; /* Always use native windows for toplevels */
   else if (!private->input_only &&

@@ -44,6 +44,7 @@
 -(BOOL)trackManualResize;
 -(void)showAndMakeKey:(BOOL)makeKey;
 -(void)hide;
+-(BOOL)makeFirstResponder:(NSResponder *)responder;
 
 @end
 

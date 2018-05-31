@@ -722,6 +722,9 @@ void       gdk_window_redirect_to_drawable   (GdkWindow     *window,
                                               gint           height);
 void       gdk_window_remove_redirection     (GdkWindow     *window);
 
+/* NSView embedding */
+gboolean   gdk_window_supports_nsview_embedding ();
+
 #ifndef GDK_DISABLE_DEPRECATED
 #ifndef GDK_MULTIHEAD_SAFE
 GdkPointerHooks *gdk_set_pointer_hooks (const GdkPointerHooks *new_hooks);   

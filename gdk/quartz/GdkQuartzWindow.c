@@ -228,6 +228,28 @@
   [self handleDidMoveResize];
 }
 
+-(BOOL)makeFirstResponder:(NSResponder *)responder
+{
+  GdkWindow *window = [[self contentView] gdkWindow];
+  GdkWindowObject *private = (GdkWindowObject *)window;
+  GdkWindowImplQuartz *impl = GDK_WINDOW_IMPL_QUARTZ (private->impl);
+
+  if (impl->type_hint == GDK_WINDOW_TYPE_HINT_TOOLBAR)
+    {
+      if ([responder respondsToSelector:@selector(isGtkView)] ||
+          [responder isKindOfClass:[GdkQuartzView class]])
+        {
+          _gdk_quartz_events_update_focus_window (window, TRUE);
+        }
+      else
+        {
+          _gdk_quartz_events_update_focus_window (window, FALSE);
+        }
+    }
+
+  return [super makeFirstResponder:responder];
+}
+
 -(id)initWithContentRect:(NSRect)contentRect styleMask:(NSUInteger)styleMask backing:(NSBackingStoreType)backingType defer:(BOOL)flag screen:(NSScreen *)screen
 {
   self = [super initWithContentRect:contentRect

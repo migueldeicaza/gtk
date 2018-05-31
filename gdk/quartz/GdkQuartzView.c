@@ -122,6 +122,11 @@
   return selectedRange;
 }
 
+-(BOOL)isGtkView
+{
+  return YES;
+}
+
 -(void)unmarkText
 {
   GDK_NOTE (EVENTS, g_print ("unmarkText\n"));
