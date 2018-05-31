@@ -116,6 +116,12 @@ void           gtk_scrolled_window_set_policy        (GtkScrolledWindow *scrolle
 void           gtk_scrolled_window_get_policy        (GtkScrolledWindow *scrolled_window,
 						      GtkPolicyType     *hscrollbar_policy,
 						      GtkPolicyType     *vscrollbar_policy);
+void          gtk_scrolled_window_set_overlay_policy (GtkScrolledWindow *scrolled_window,
+						      GtkPolicyType      hoverlay_policy,
+						      GtkPolicyType      voverlay_policy);
+void          gtk_scrolled_window_get_overlay_policy (GtkScrolledWindow *scrolled_window,
+						      GtkPolicyType     *hoverlay_policy,
+						      GtkPolicyType     *voverlay_policy);
 void           gtk_scrolled_window_set_placement     (GtkScrolledWindow *scrolled_window,
 						      GtkCornerType      window_placement);
 void           gtk_scrolled_window_unset_placement   (GtkScrolledWindow *scrolled_window);

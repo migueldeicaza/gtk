@@ -121,6 +121,9 @@ typedef struct {
   gdouble                unclamped_hadj_value;
   gdouble                unclamped_vadj_value;
 
+  GtkPolicyType  hoverlay_policy;
+  GtkPolicyType  voverlay_policy;
+
   GtkAllocation  viewport_allocation;
   CALayer       *vbar_layer;
   CALayer       *hbar_layer;
@@ -536,6 +539,9 @@ gtk_scrolled_window_init (GtkScrolledWindow *scrolled_window)
                                 NULL);
   g_object_ref_sink (priv->opacity);
 
+  priv->hoverlay_policy = GTK_POLICY_AUTOMATIC;
+  priv->voverlay_policy = GTK_POLICY_AUTOMATIC;
+
   priv->sb_min_height = 20;
   priv->sb_padding = 2;
   priv->sb_radius = 3;
@@ -863,6 +869,42 @@ gtk_scrolled_window_get_policy (GtkScrolledWindow *scrolled_window,
     *hscrollbar_policy = scrolled_window->hscrollbar_policy;
   if (vscrollbar_policy)
     *vscrollbar_policy = scrolled_window->vscrollbar_policy;
+}
+
+void
+gtk_scrolled_window_set_overlay_policy (GtkScrolledWindow *scrolled_window,
+                                        GtkPolicyType      hoverlay_policy,
+                                        GtkPolicyType      voverlay_policy)
+{
+  GtkScrolledWindowPrivate *priv;
+
+  g_return_if_fail (GTK_IS_SCROLLED_WINDOW (scrolled_window));
+  g_return_if_fail (hoverlay_policy == GTK_POLICY_AUTOMATIC ||
+                    hoverlay_policy == GTK_POLICY_NEVER);
+  g_return_if_fail (voverlay_policy == GTK_POLICY_AUTOMATIC ||
+                    voverlay_policy == GTK_POLICY_NEVER);
+
+  priv = GTK_SCROLLED_WINDOW_GET_PRIVATE (scrolled_window);
+
+  priv->hoverlay_policy = hoverlay_policy;
+  priv->voverlay_policy = voverlay_policy;
+}
+
+void
+gtk_scrolled_window_get_overlay_policy (GtkScrolledWindow *scrolled_window,
+                                        GtkPolicyType     *hoverlay_policy,
+                                        GtkPolicyType     *voverlay_policy)
+{
+  GtkScrolledWindowPrivate *priv;
+
+  g_return_if_fail (GTK_IS_SCROLLED_WINDOW (scrolled_window));
+
+  priv = GTK_SCROLLED_WINDOW_GET_PRIVATE (scrolled_window);
+
+  if (hoverlay_policy)
+    *hoverlay_policy = priv->hoverlay_policy;
+  if (voverlay_policy)
+    *voverlay_policy = priv->voverlay_policy;
 }
 
 static void
@@ -1309,7 +1351,10 @@ gtk_scrolled_window_update_scrollbars (GtkScrolledWindow *scrolled_window)
                                         &vbar_rect, &vslider_rect,
                                         &hbar_rect, &hslider_rect);
 
-  if (priv->sb_visible && scrolled_window->vscrollbar && vbar_rect.width > 0)
+  if (priv->sb_visible                              &&
+      scrolled_window->vscrollbar                   &&
+      priv->voverlay_policy == GTK_POLICY_AUTOMATIC &&
+      vbar_rect.width > 0)
     {
       rect.origin.x = priv->viewport_allocation.x + vbar_rect.x;
       rect.origin.y = priv->viewport_allocation.y + vbar_rect.y;
@@ -1326,7 +1371,10 @@ gtk_scrolled_window_update_scrollbars (GtkScrolledWindow *scrolled_window)
       priv->vbar_layer.opacity = 0.0;
     }
 
-  if (priv->sb_visible && scrolled_window->hscrollbar && hbar_rect.width > 0)
+  if (priv->sb_visible                              &&
+      scrolled_window->hscrollbar                   &&
+      priv->hoverlay_policy == GTK_POLICY_AUTOMATIC &&
+      hbar_rect.width > 0)
     {
       rect.origin.x = priv->viewport_allocation.x + hbar_rect.x;
       rect.origin.y = priv->viewport_allocation.y + hbar_rect.y;
@@ -1334,8 +1382,12 @@ gtk_scrolled_window_update_scrollbars (GtkScrolledWindow *scrolled_window)
       rect.size.height = hbar_rect.height;
 
       /* don't overlap in the corner */
-      if (scrolled_window->vscrollbar && vbar_rect.width > 0)
-        rect.size.width -= vbar_rect.width;
+      if (scrolled_window->vscrollbar                   &&
+          priv->voverlay_policy == GTK_POLICY_AUTOMATIC &&
+          vbar_rect.width > 0)
+        {
+          rect.size.width -= vbar_rect.width;
+        }
 
       rect.origin.y = window_height - rect.origin.y - rect.size.height;
 
@@ -1347,7 +1399,9 @@ gtk_scrolled_window_update_scrollbars (GtkScrolledWindow *scrolled_window)
       priv->hbar_layer.opacity = 0.0;
     }
 
-  if (scrolled_window->vscrollbar && vslider_rect.width > 0)
+  if (scrolled_window->vscrollbar                   &&
+      priv->voverlay_policy == GTK_POLICY_AUTOMATIC &&
+      vslider_rect.width > 0)
     {
       rect.origin.x = priv->viewport_allocation.x + vslider_rect.x;
       rect.origin.y = priv->viewport_allocation.y + vslider_rect.y;
@@ -1365,7 +1419,9 @@ gtk_scrolled_window_update_scrollbars (GtkScrolledWindow *scrolled_window)
       priv->vslider_layer.opacity = 0.0;
     }
 
-  if (scrolled_window->hscrollbar && hslider_rect.width > 0)
+  if (scrolled_window->hscrollbar                   &&
+      priv->hoverlay_policy == GTK_POLICY_AUTOMATIC &&
+      hslider_rect.width > 0)
     {
       rect.origin.x = priv->viewport_allocation.x + hslider_rect.x;
       rect.origin.y = priv->viewport_allocation.y + hslider_rect.y;
