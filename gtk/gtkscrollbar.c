@@ -32,6 +32,8 @@
 #include "gtkprivate.h"
 #include "gtkalias.h"
 
+static void gtk_scrollbar_size_request (GtkWidget      *widget,
+                                        GtkRequisition *requisition);
 static void gtk_scrollbar_style_set (GtkWidget *widget,
                                      GtkStyle  *previous);
 
@@ -42,6 +44,7 @@ gtk_scrollbar_class_init (GtkScrollbarClass *class)
 {
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (class);
 
+  widget_class->size_request = gtk_scrollbar_size_request;
   widget_class->style_set = gtk_scrollbar_style_set;
 
   GTK_RANGE_CLASS (class)->stepper_detail = "Xscrollbar";
@@ -94,6 +97,31 @@ gtk_scrollbar_class_init (GtkScrollbarClass *class)
 static void
 gtk_scrollbar_init (GtkScrollbar *scrollbar)
 {
+}
+
+static void
+gtk_scrollbar_size_request (GtkWidget      *widget,
+                            GtkRequisition *requisition)
+{
+  GtkRange *range = GTK_RANGE (widget);
+  gboolean saved_a, saved_b, saved_c, saved_d;
+
+  saved_a = range->has_stepper_a;
+  saved_b = range->has_stepper_b;
+  saved_c = range->has_stepper_c;
+  saved_d = range->has_stepper_d;
+
+  range->has_stepper_a = TRUE;
+  range->has_stepper_b = FALSE;
+  range->has_stepper_c = FALSE;
+  range->has_stepper_d = TRUE;
+
+  GTK_WIDGET_CLASS (gtk_scrollbar_parent_class)->size_request (widget, requisition);
+
+  range->has_stepper_a = saved_a;
+  range->has_stepper_b = saved_b;
+  range->has_stepper_c = saved_c;
+  range->has_stepper_d = saved_d;
 }
 
 static void
