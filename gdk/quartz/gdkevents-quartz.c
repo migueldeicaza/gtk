@@ -877,6 +877,9 @@ find_window_for_ns_event (NSEvent *nsevent,
                     NSView* sv = [[toplevel_impl->view subviews] objectAtIndex:i];
                     NSRect r = [sv frame];
 
+                    if (sv == toplevel_impl->layer_view)
+                      continue;
+
                     if (r.origin.x <= *x && r.origin.x + r.size.width >= *x &&
                         r.origin.y <= *y && r.origin.y + r.size.height >= *y)
                       {
