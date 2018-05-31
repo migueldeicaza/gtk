@@ -61,6 +61,7 @@ struct _GdkWindowImplQuartz
   GList *sorted_children;
 
   GdkRegion *needs_display_region;
+  gboolean has_nsview_focus;
 };
  
 struct _GdkWindowImplQuartzClass 

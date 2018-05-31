@@ -903,6 +903,24 @@ gdk_window_supports_nsview_embedding ()
   return TRUE;
 }
 
+gboolean
+gdk_window_has_embedded_nsview_focus (GdkWindow *window)
+{
+  GdkWindowObject *private = GDK_WINDOW_OBJECT (window);
+  GdkWindowImplQuartz *impl = GDK_WINDOW_IMPL_QUARTZ (private->impl);
+
+  return impl->has_nsview_focus;
+}
+
+void
+gdk_window_set_has_embedded_nsview_focus (GdkWindow *window, gboolean value)
+{
+  GdkWindowObject *private = GDK_WINDOW_OBJECT (window);
+  GdkWindowImplQuartz *impl = GDK_WINDOW_IMPL_QUARTZ (private->impl);
+
+  impl->has_nsview_focus = value;
+}
+
 void
 _gdk_window_impl_new (GdkWindow     *window,
 		      GdkWindow     *real_parent,

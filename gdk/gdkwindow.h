@@ -724,6 +724,8 @@ void       gdk_window_remove_redirection     (GdkWindow     *window);
 
 /* NSView embedding */
 gboolean   gdk_window_supports_nsview_embedding ();
+gboolean   gdk_window_has_embedded_nsview_focus (GdkWindow *window);
+void       gdk_window_set_has_embedded_nsview_focus (GdkWindow *window, gboolean value);
 
 #ifndef GDK_DISABLE_DEPRECATED
 #ifndef GDK_MULTIHEAD_SAFE

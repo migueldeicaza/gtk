@@ -247,6 +247,15 @@
         }
     }
 
+  if (responder != NULL && [responder isKindOfClass: [NSTextView class]])
+    {
+      gdk_window_set_has_embedded_nsview_focus (window, TRUE);
+    }
+  else
+    {
+      gdk_window_set_has_embedded_nsview_focus (window, FALSE);
+    }
+
   return [super makeFirstResponder:responder];
 }
 
