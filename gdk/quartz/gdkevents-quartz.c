@@ -1852,7 +1852,10 @@ gdk_event_translate (GdkEvent *event,
             if (tmp_view && [tmp_view respondsToSelector:@selector(isGtkView)])
               gtk_child = TRUE;
 
-            tmp_view = [tmp_view superview];
+            if ([tmp_view respondsToSelector:@selector(superview)])
+              tmp_view = [tmp_view superview];
+            else
+              tmp_view = NULL;
           }
 
         if (!gtk_child && ![[nswindow firstResponder] respondsToSelector:@selector(isGtkView)])
