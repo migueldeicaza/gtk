@@ -3129,5 +3129,37 @@ gtk_icon_source_get_filename (const GtkIconSource *source)
 
 #endif
 
+void
+gtk_cairo_set_source_icon_set (cairo_t         *cr,
+                               GtkWidget       *widget,
+                               GtkIconSet      *icon_set,
+                               GtkIconSize      size,
+                               gdouble          scale,
+                               gdouble          icon_x,
+                               gdouble          icon_y)
+{
+  cairo_pattern_t *pattern;
+  cairo_matrix_t matrix;
+  GdkPixbuf *pixbuf;
+
+  g_return_if_fail (GTK_IS_WIDGET (widget));
+  g_return_if_fail (cr != NULL);
+  g_return_if_fail (icon_set != NULL);
+
+  pixbuf = gtk_icon_set_render_icon_scaled (icon_set,
+                                            gtk_widget_get_style (widget),
+                                            gtk_widget_get_direction (widget),
+                                            gtk_widget_get_state (widget),
+                                            size, widget, NULL, &scale);
+  gdk_cairo_set_source_pixbuf (cr, pixbuf, 0, 0);
+
+  pattern = cairo_get_source (cr);
+  cairo_matrix_init_scale (&matrix, scale, scale);
+  cairo_matrix_translate (&matrix, -icon_x, -icon_y);
+  cairo_pattern_set_matrix (pattern, &matrix);
+
+  g_object_unref (pixbuf);
+}
+
 #define __GTK_ICON_FACTORY_C__
 #include "gtkaliasdef.c"
