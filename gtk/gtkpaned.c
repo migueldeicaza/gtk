@@ -1375,6 +1375,10 @@ gtk_paned_pack1 (GtkPaned  *paned,
       paned->child1_shrink = shrink;
 
       gtk_widget_set_parent (child, GTK_WIDGET (paned));
+
+      /* We need to emit this signal so that the accessibility system knows
+         that a widget has been added to the pane */
+      g_signal_emit_by_name (G_OBJECT (paned), "add", child);
     }
 }
 
@@ -1394,6 +1398,10 @@ gtk_paned_pack2 (GtkPaned  *paned,
       paned->child2_shrink = shrink;
 
       gtk_widget_set_parent (child, GTK_WIDGET (paned));
+
+      /* We need to emit this signal so that the accessibility system knows
+         that a widget has been added to the pane */
+      g_signal_emit_by_name (G_OBJECT (paned), "add", child);
     }
 }
 
@@ -1405,6 +1413,11 @@ gtk_paned_add (GtkContainer *container,
   GtkPaned *paned;
 
   g_return_if_fail (GTK_IS_PANED (container));
+
+  /* Break the add signal cycle */
+  if (widget->parent == container) {
+    return;
+  }
 
   paned = GTK_PANED (container);
 
