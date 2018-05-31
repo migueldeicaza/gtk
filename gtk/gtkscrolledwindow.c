@@ -2027,6 +2027,14 @@ gtk_scrolled_window_scroll_event (GtkWidget      *widget,
       if (is_momentum_event && !is_overshot)
         gtk_scrolled_window_calculate_velocity (scrolled_window, (GdkEvent *)event);
 
+      /* Cancel out smaller component, makes it easier to scroll when the
+       * gestures are not fully straight.
+       */
+      if (fabs (delta_y) >= fabs (delta_x))
+        delta_x = 0.0;
+      else
+        delta_y = 0.0;
+
       /* Scroll events are handled in two cases:
        *  1) We are not overshot and not snapping back, so scroll as
        *  usual and also handle momentum events.
