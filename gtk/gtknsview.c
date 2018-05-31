@@ -664,14 +664,52 @@ gtk_ns_view_key_press (GtkWidget   *widget,
 {
   GtkNSView *ns_view = GTK_NS_VIEW (widget);
   NSEvent *nsevent = gdk_quartz_event_get_nsevent ((GdkEvent *) event);
-  NSWindow *ns_window;
 
   if (gtk_ns_view_forward_event (widget, event))
     {
-      ns_window = [ns_view->priv->view window];
-      [ns_window sendEvent:nsevent];
+      NSWindow *ns_window = [ns_view->priv->view window];
+      NSResponder *responder = [ns_window firstResponder];
 
-      return TRUE;
+      if ([responder isKindOfClass: [NSTextView class]] &&
+          (event->state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK |
+                           GDK_MOD1_MASK | GDK_MOD2_MASK)) == GDK_MOD2_MASK)
+        {
+          NSTextView *text_view = (NSTextView *) responder;
+          NSRange range = [text_view selectedRange];
+          gboolean has_selection = range.length > 0;
+
+          switch (event->keyval)
+            {
+            case GDK_KEY_c: /* copy */
+              if (has_selection)
+                [text_view copy: text_view];
+              return TRUE;
+
+            case GDK_KEY_x: /* cut */
+              if (has_selection)
+                [text_view cut: text_view];
+              return TRUE;
+
+            case GDK_KEY_v: /* paste */
+              [text_view paste: text_view];
+              return TRUE;
+
+            case GDK_KEY_a: /* all */
+              range.location = 0;
+              range.length = [[text_view string] length];
+              [text_view setSelectedRange: range];
+              return TRUE;
+
+            default:
+              break;
+            }
+        }
+      else
+        {
+          [ns_window sendEvent:nsevent];
+
+          return TRUE;
+        }
     }
 
   return GTK_WIDGET_CLASS (gtk_ns_view_parent_class)->key_press_event (widget, event);
@@ -683,11 +721,11 @@ gtk_ns_view_key_release (GtkWidget   *widget,
 {
   GtkNSView *ns_view = GTK_NS_VIEW (widget);
   NSEvent *nsevent = gdk_quartz_event_get_nsevent ((GdkEvent *) event);
-  NSWindow *ns_window;
 
   if (gtk_ns_view_forward_event (widget, event))
     {
-      ns_window = [ns_view->priv->view window];
+      NSWindow *ns_window = [ns_view->priv->view window];
+
       [ns_window sendEvent:nsevent];
 
       return TRUE;
