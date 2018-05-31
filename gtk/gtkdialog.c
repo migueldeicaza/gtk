@@ -275,6 +275,14 @@ gtk_dialog_init (GtkDialog *dialog)
   priv = GET_PRIVATE (dialog);
   priv->ignore_separator = FALSE;
 
+  /* If we don't create the accessible now, then the accessibility subsystem
+   * will never know about vbox being added. This is a bit of a hack as
+   * every composite widget that builds itself in _init will need to do this
+   * or else it will be inaccessible, but I can't think of a better way at
+   * present
+   */
+  gtk_widget_get_accessible (GTK_WIDGET (dialog));
+
   /* To avoid breaking old code that prevents destroy on delete event
    * by connecting a handler, we have to have the FIRST signal
    * connection on the dialog.
