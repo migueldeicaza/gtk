@@ -597,6 +597,7 @@ gtk_table_attach (GtkTable	  *table,
   table->children = g_list_prepend (table->children, table_child);
   
   gtk_widget_set_parent (child, GTK_WIDGET (table));
+  g_signal_emit_by_name (G_OBJECT (table), "add", child);
 }
 
 void
@@ -880,6 +881,10 @@ static void
 gtk_table_add (GtkContainer *container,
 	       GtkWidget    *widget)
 {
+  /* Protect against the signal emission in gtk_tabel_attach */
+  if (widget->parent == container) {
+    return;
+  }
   gtk_table_attach_defaults (GTK_TABLE (container), widget, 0, 1, 0, 1);
 }
 
