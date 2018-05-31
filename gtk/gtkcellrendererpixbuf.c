@@ -614,8 +614,8 @@ gtk_cell_renderer_pixbuf_create_themed_pixbuf (GtkCellRendererPixbuf *cellpixbuf
 }
 
 static GdkPixbuf *
-create_colorized_pixbuf (GdkPixbuf *src, 
-			 GdkColor  *new_color)
+create_colorized_pixbuf_single (GdkPixbuf *src,
+				GdkColor  *new_color)
 {
   gint i, j;
   gint width, height, has_alpha, src_row_stride, dst_row_stride;
@@ -659,6 +659,28 @@ create_colorized_pixbuf (GdkPixbuf *src,
   return dest;
 }
 
+static GdkPixbuf *
+create_colorized_pixbuf (GdkPixbuf *src,
+			 GdkColor  *new_color)
+{
+  GdkPixbuf *colorized, *variant, *colorized_variant;
+
+  colorized = create_colorized_pixbuf_single (src, new_color);
+
+  variant = g_object_get_data (G_OBJECT (src),
+                               "gdk-pixbuf-2x-variant");
+
+  if (colorized && variant)
+    {
+      colorized_variant = create_colorized_pixbuf_single (variant, new_color);
+      g_object_set_data_full (G_OBJECT (colorized),
+                              "gdk-pixbuf-2x-variant",
+                              colorized_variant,
+                              (GDestroyNotify) g_object_unref);
+    }
+
+  return colorized;
+}
 
 static void
 gtk_cell_renderer_pixbuf_get_size (GtkCellRenderer *cell,
