@@ -1412,6 +1412,8 @@ gtk_icon_theme_lookup_icon (GtkIconTheme       *icon_theme,
 			    gint                size,
 			    GtkIconLookupFlags  flags)
 {
+  GtkIconInfo *retval, *variant;
+
   g_return_val_if_fail (GTK_IS_ICON_THEME (icon_theme), NULL);
   g_return_val_if_fail (icon_name != NULL, NULL);
   g_return_val_if_fail ((flags & GTK_ICON_LOOKUP_NO_SVG) == 0 ||
@@ -1420,8 +1422,22 @@ gtk_icon_theme_lookup_icon (GtkIconTheme       *icon_theme,
   GTK_NOTE (ICONTHEME,
 	    g_print ("gtk_icon_theme_lookup_icon %s\n", icon_name));
 
-  return gtk_icon_theme_lookup_icon_for_scale (icon_theme, icon_name,
-                                               size, 1, flags);
+  retval = gtk_icon_theme_lookup_icon_for_scale (icon_theme, icon_name,
+                                                 size, 1, flags);
+
+  variant = gtk_icon_theme_lookup_icon_for_scale (icon_theme, icon_name,
+                                                  size, 2, flags);
+  if (retval && variant &&
+      retval->pixbuf && variant->pixbuf &&
+      gdk_pixbuf_get_width (variant->pixbuf) > gdk_pixbuf_get_width (retval->pixbuf))
+    g_object_set_data_full (G_OBJECT (retval->pixbuf),
+                            "gdk-pixbuf-2x-variant",
+                            g_object_ref (variant->pixbuf),
+                            (GDestroyNotify) g_object_unref);
+  if (variant)
+    gtk_icon_info_free (variant);
+
+  return retval;
 }
 
 GtkIconInfo *
@@ -1510,12 +1526,27 @@ gtk_icon_theme_choose_icon (GtkIconTheme       *icon_theme,
 			    gint                size,
 			    GtkIconLookupFlags  flags)
 {
+  GtkIconInfo *retval, *variant;
+
   g_return_val_if_fail (GTK_IS_ICON_THEME (icon_theme), NULL);
   g_return_val_if_fail (icon_names != NULL, NULL);
   g_return_val_if_fail ((flags & GTK_ICON_LOOKUP_NO_SVG) == 0 ||
 			(flags & GTK_ICON_LOOKUP_FORCE_SVG) == 0, NULL);
 
-  return choose_icon (icon_theme, icon_names, size, 1, flags);
+  retval = choose_icon (icon_theme, icon_names, size, 1, flags);
+  variant = choose_icon (icon_theme, icon_names, size, 2, flags);
+
+  if (retval && variant &&
+      retval->pixbuf && variant->pixbuf &&
+      gdk_pixbuf_get_width (variant->pixbuf) > gdk_pixbuf_get_width (retval->pixbuf))
+    g_object_set_data_full (G_OBJECT (retval->pixbuf),
+                            "gdk-pixbuf-2x-variant",
+                            g_object_ref (variant->pixbuf),
+                            (GDestroyNotify) g_object_unref);
+  if (variant)
+    gtk_icon_info_free (variant);
+
+  return retval;
 }
 
 GtkIconInfo *
@@ -1578,14 +1609,30 @@ gtk_icon_theme_load_icon (GtkIconTheme         *icon_theme,
 			  GtkIconLookupFlags    flags,
 			  GError              **error)
 {
+  GdkPixbuf *pixbuf, *variant;
+
   g_return_val_if_fail (GTK_IS_ICON_THEME (icon_theme), NULL);
   g_return_val_if_fail (icon_name != NULL, NULL);
   g_return_val_if_fail ((flags & GTK_ICON_LOOKUP_NO_SVG) == 0 ||
 			(flags & GTK_ICON_LOOKUP_FORCE_SVG) == 0, NULL);
   g_return_val_if_fail (error == NULL || *error == NULL, NULL);
 
-  return gtk_icon_theme_load_icon_for_scale (icon_theme, icon_name,
-                                             size, 1, flags, error);
+  pixbuf = gtk_icon_theme_load_icon_for_scale (icon_theme, icon_name,
+                                               size, 1, flags, error);
+
+  variant = gtk_icon_theme_load_icon_for_scale (icon_theme, icon_name,
+                                               size, 2, flags, NULL);
+
+  if (pixbuf && variant &&
+      gdk_pixbuf_get_width (variant) > gdk_pixbuf_get_width (pixbuf))
+    g_object_set_data_full (G_OBJECT (pixbuf),
+                            "gdk-pixbuf-2x-variant",
+                            g_object_ref (variant),
+                            (GDestroyNotify) g_object_unref);
+  if (variant)
+    g_object_unref (variant);
+
+  return pixbuf;
 }
 
 GdkPixbuf *

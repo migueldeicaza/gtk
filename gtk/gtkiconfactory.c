@@ -1733,14 +1733,32 @@ gtk_icon_set_render_icon (GtkIconSet        *icon_set,
                           GtkWidget         *widget,
                           const char        *detail)
 {
+  GdkPixbuf *pixbuf, *variant;
   gdouble scale = 1;
 
   g_return_val_if_fail (icon_set != NULL, NULL);
   g_return_val_if_fail (style == NULL || GTK_IS_STYLE (style), NULL);
 
-  return gtk_icon_set_render_icon_internal (icon_set, style, direction,
-                                            state, size, widget, detail,
-                                            &scale);
+  pixbuf = gtk_icon_set_render_icon_internal (icon_set, style, direction,
+                                              state, size, widget, detail,
+                                              &scale);
+  if (pixbuf && scale == 1)
+    {
+      scale = 2;
+      variant = gtk_icon_set_render_icon_internal (icon_set, style, direction,
+                                                   state, size, widget, detail,
+                                                   &scale);
+      if (variant &&
+	  gdk_pixbuf_get_width (variant) > gdk_pixbuf_get_width (pixbuf))
+        g_object_set_data_full (G_OBJECT (pixbuf),
+                                "gdk-pixbuf-2x-variant",
+                                variant,
+                                (GDestroyNotify) g_object_unref);
+      else if (variant)
+        g_object_unref (variant);
+    }
+
+  return pixbuf;
 }
 
 GdkPixbuf*
