@@ -708,13 +708,15 @@ gtk_plug_map (GtkWidget *widget)
     {
       GtkBin *bin = GTK_BIN (widget);
       GtkPlug *plug = GTK_PLUG (widget);
-      
+      GtkWidget *child;
+
       gtk_widget_set_mapped (widget, TRUE);
 
-      if (bin->child &&
-	  gtk_widget_get_visible (bin->child) &&
-	  !gtk_widget_get_mapped (bin->child))
-	gtk_widget_map (bin->child);
+      child = gtk_bin_get_child (bin);
+      if (child != NULL &&
+          gtk_widget_get_visible (child) &&
+          !gtk_widget_get_mapped (child))
+        gtk_widget_map (child);
 
       _gtk_plug_windowing_map_toplevel (plug);
       
@@ -732,13 +734,18 @@ gtk_plug_unmap (GtkWidget *widget)
   if (gtk_widget_is_toplevel (widget))
     {
       GtkPlug *plug = GTK_PLUG (widget);
+      GtkWidget *child;
 
       gtk_widget_set_mapped (widget, FALSE);
 
       gdk_window_hide (widget->window);
 
+      child = gtk_bin_get_child (GTK_BIN (widget));
+      if (child != NULL)
+        gtk_widget_unmap (child);
+
       _gtk_plug_windowing_unmap_toplevel (plug);
-      
+
       gdk_synthesize_window_state (widget->window,
 				   0,
 				   GDK_WINDOW_STATE_WITHDRAWN);
