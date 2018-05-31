@@ -1862,7 +1862,7 @@ gdk_event_translate (GdkEvent *event,
         NSView *tmp_view = [nswindow firstResponder];
         gboolean gtk_child = FALSE;
 
-        if (event_type == NSKeyDown && ([nsevent modifierFlags] & NSCommandKeyMask) != 0 && [[nsevent characters] characterAtIndex:0] == 'z')
+        if (event_type == NSKeyDown && ([nsevent modifierFlags] & NSCommandKeyMask) != 0 && [[nsevent characters] length] > 0 && [[nsevent characters] characterAtIndex:0] == 'z')
           {
             if ([tmp_view respondsToSelector:@selector(undoManager)])
               {
