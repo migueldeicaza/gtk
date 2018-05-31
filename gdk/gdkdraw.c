@@ -819,12 +819,30 @@ gdk_draw_pixbuf (GdkDrawable     *drawable,
                  gint             x_dither,
                  gint             y_dither)
 {
+  GdkPixbuf *scaled_pixbuf;
+
   g_return_if_fail (GDK_IS_DRAWABLE (drawable));
   g_return_if_fail (gc == NULL || GDK_IS_GC (gc));
   g_return_if_fail (GDK_IS_PIXBUF (pixbuf));
 
   if (width == 0 || height == 0)
     return;
+
+  scaled_pixbuf = g_object_get_data (G_OBJECT (pixbuf),
+                                     "gdk-pixbuf-2x-variant");
+
+  if (scaled_pixbuf && GDK_IS_WINDOW (drawable) &&
+      (int) gdk_window_get_scale_factor (GDK_WINDOW (drawable)) == 2)
+    {
+      cairo_t *cr;
+
+      cr = gdk_cairo_create (GDK_WINDOW (drawable));
+      gdk_cairo_set_source_pixbuf (cr, pixbuf, dest_x, dest_y);
+      cairo_paint (cr);
+
+      cairo_destroy (cr);
+      return;
+    }
 
   if (width == -1)
     width = gdk_pixbuf_get_width (pixbuf);

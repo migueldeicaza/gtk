@@ -23,6 +23,8 @@
 #include "gdkregion-generic.h"
 #include "gdkalias.h"
 
+static const cairo_user_data_key_t gdk_cairo_drawable_pointer;
+
 static void
 gdk_ensure_surface_flush (gpointer surface)
 {
@@ -58,6 +60,7 @@ gdk_cairo_create (GdkDrawable *drawable)
 
   surface = _gdk_drawable_ref_cairo_surface (drawable);
   cr = cairo_create (surface);
+  cairo_set_user_data (cr, &gdk_cairo_drawable_pointer, drawable, NULL);
 
   if (GDK_DRAWABLE_GET_CLASS (drawable)->set_cairo_clip)
     GDK_DRAWABLE_GET_CLASS (drawable)->set_cairo_clip (drawable, cr);
@@ -203,7 +206,33 @@ gdk_cairo_set_source_pixbuf (cairo_t         *cr,
   cairo_surface_t *surface;
   static const cairo_user_data_key_t key;
   cairo_status_t status;
-  int j;
+  GdkWindow *window;
+  cairo_pattern_t *pattern;
+  cairo_matrix_t matrix;
+  int j, scale = 1;
+
+  window = cairo_get_user_data (cr, &gdk_cairo_drawable_pointer);
+
+  if (window &&
+      (int) gdk_window_get_scale_factor (window) == 2)
+    {
+      GdkPixbuf *scaled_pixbuf;
+
+      scaled_pixbuf = g_object_get_data (G_OBJECT (pixbuf),
+                                         "gdk-pixbuf-2x-variant");
+      if (scaled_pixbuf)
+        {
+          scale = 2;
+          pixbuf = scaled_pixbuf;
+        }
+    }
+
+  width = gdk_pixbuf_get_width (pixbuf);
+  height = gdk_pixbuf_get_height (pixbuf);
+  gdk_pixels = gdk_pixbuf_get_pixels (pixbuf);
+  gdk_rowstride = gdk_pixbuf_get_rowstride (pixbuf);
+  n_channels = gdk_pixbuf_get_n_channels (pixbuf);
+
 
   if (n_channels == 3)
     format = CAIRO_FORMAT_RGB24;
@@ -281,7 +310,12 @@ gdk_cairo_set_source_pixbuf (cairo_t         *cr,
     }
 
 out:
-  cairo_set_source_surface (cr, surface, pixbuf_x, pixbuf_y);
+  cairo_set_source_surface (cr, surface, 0, 0);
+  pattern = cairo_get_source (cr);
+  cairo_matrix_init_scale (&matrix, scale, scale);
+  cairo_matrix_translate (&matrix, -pixbuf_x, -pixbuf_y);
+  cairo_pattern_set_matrix (pattern, &matrix);
+
   cairo_surface_destroy (surface);
 }
 
