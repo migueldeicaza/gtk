@@ -263,6 +263,14 @@ typedef enum
   GDK_OWNER_CHANGE_CLOSE
 } GdkOwnerChange;
 
+typedef enum
+{
+  GDK_EVENT_SCROLL_PHASE_NONE,
+  GDK_EVENT_SCROLL_PHASE_START,
+  GDK_EVENT_SCROLL_PHASE_ACTIVE,
+  GDK_EVENT_SCROLL_PHASE_END
+} GdkEventScrollPhase;
+
 struct _GdkEventAny
 {
   GdkEventType type;
@@ -340,6 +348,7 @@ struct _GdkEventScroll
   gboolean has_deltas;
   gdouble delta_x;
   gdouble delta_y;
+  GdkEventScrollPhase phase;
 };
 
 struct _GdkEventKey

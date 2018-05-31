@@ -394,6 +394,7 @@ gdk_event_new (GdkEventType type)
       new_event->scroll.y_root = 0.;
       new_event->scroll.delta_x = 0.;
       new_event->scroll.delta_y = 0.;
+      new_event->scroll.phase = GDK_EVENT_SCROLL_PHASE_NONE;
       break;
     case GDK_ENTER_NOTIFY:
     case GDK_LEAVE_NOTIFY:
