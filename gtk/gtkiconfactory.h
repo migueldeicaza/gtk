@@ -105,6 +105,11 @@ gboolean gtk_icon_size_lookup_for_settings (GtkSettings *settings,
 					    GtkIconSize  size,
 					    gint        *width,
 					    gint        *height);
+gboolean gtk_icon_size_lookup_scaled       (GtkSettings *settings,
+                                            GtkIconSize  size,
+                                            gdouble      scale,
+                                            gint        *width,
+                                            gint        *height);
 
 GtkIconSize           gtk_icon_size_register       (const gchar *name,
                                                     gint         width,
@@ -134,7 +139,14 @@ GdkPixbuf*  gtk_icon_set_render_icon     (GtkIconSet      *icon_set,
                                           GtkIconSize      size,
                                           GtkWidget       *widget,
                                           const char      *detail);
-
+GdkPixbuf* gtk_icon_set_render_icon_scaled (GtkIconSet        *icon_set,
+                                            GtkStyle          *style,
+                                            GtkTextDirection   direction,
+                                            GtkStateType       state,
+                                            GtkIconSize        size,
+                                            GtkWidget         *widget,
+                                            const char        *detail,
+                                            gdouble           *real_scale);
 
 void           gtk_icon_set_add_source   (GtkIconSet          *icon_set,
                                           const GtkIconSource *source);
