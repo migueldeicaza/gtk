@@ -154,6 +154,7 @@ typedef struct {
   gboolean       overlay_scrollbars;
   gboolean       is_snapping_back;
   gboolean       gesture_in_progress;
+  gboolean       enable_overshoot;
 } GtkScrolledWindowPrivate;
 
 #define GTK_SCROLLED_WINDOW_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GTK_TYPE_SCROLLED_WINDOW, GtkScrolledWindowPrivate))
@@ -540,6 +541,8 @@ gtk_scrolled_window_init (GtkScrolledWindow *scrolled_window)
   priv->sb_radius = 3;
   priv->sb_width = 6;
   priv->sb_fade_out_delay = 1000;
+
+  priv->enable_overshoot = TRUE;
 
   g_signal_connect_swapped (priv->opacity, "value-changed",
                             G_CALLBACK (gtk_scrolled_window_update_scrollbars),
@@ -2144,8 +2147,9 @@ gtk_scrolled_window_scroll_event (GtkWidget      *widget,
       gboolean is_momentum_event = event->momentum_phase != GDK_EVENT_SCROLL_PHASE_NONE;
       gboolean legacy_mouse = FALSE;
 
-      if (event->phase == GDK_EVENT_SCROLL_PHASE_NONE &&
-          event->momentum_phase == GDK_EVENT_SCROLL_PHASE_NONE)
+      if (!priv->enable_overshoot ||
+          (event->phase == GDK_EVENT_SCROLL_PHASE_NONE &&
+           event->momentum_phase == GDK_EVENT_SCROLL_PHASE_NONE))
         legacy_mouse = TRUE;
 
       _gtk_scrolled_window_get_overshoot (scrolled_window,
@@ -3104,6 +3108,31 @@ gtk_scrolled_window_add_with_viewport (GtkScrolledWindow *scrolled_window,
 
   gtk_widget_show (viewport);
   gtk_container_add (GTK_CONTAINER (viewport), child);
+}
+
+void
+gtk_scrolled_window_set_enable_overshoot (GtkScrolledWindow *scrolled_window,
+                                          gboolean           enable_overshoot)
+{
+  GtkScrolledWindowPrivate *priv;
+
+  g_return_if_fail (GTK_IS_SCROLLED_WINDOW (scrolled_window));
+
+  priv = GTK_SCROLLED_WINDOW_GET_PRIVATE (scrolled_window);
+
+  priv->enable_overshoot = enable_overshoot ? TRUE : FALSE;
+}
+
+gboolean
+gtk_scrolled_window_get_enable_overshoot (GtkScrolledWindow *scrolled_window)
+{
+  GtkScrolledWindowPrivate *priv;
+
+  g_return_val_if_fail (GTK_IS_SCROLLED_WINDOW (scrolled_window), FALSE);
+
+  priv = GTK_SCROLLED_WINDOW_GET_PRIVATE (scrolled_window);
+
+  return priv->enable_overshoot;
 }
 
 /*

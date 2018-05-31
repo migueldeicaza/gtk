@@ -127,13 +127,9 @@ GtkShadowType  gtk_scrolled_window_get_shadow_type   (GtkScrolledWindow *scrolle
 void	       gtk_scrolled_window_add_with_viewport (GtkScrolledWindow *scrolled_window,
 						      GtkWidget		*child);
 
-void           gtk_scrolled_window_set_kinetic_scrolling  (GtkScrolledWindow        *scrolled_window,
-                                                           gboolean                  kinetic_scrolling);
-gboolean       gtk_scrolled_window_get_kinetic_scrolling  (GtkScrolledWindow        *scrolled_window);
-
-void           gtk_scrolled_window_set_capture_button_press (GtkScrolledWindow      *scrolled_window,
-                                                             gboolean                capture_button_press);
-gboolean       gtk_scrolled_window_get_capture_button_press (GtkScrolledWindow      *scrolled_window);
+void           gtk_scrolled_window_set_enable_overshoot (GtkScrolledWindow *scrolled_window,
+                                                         gboolean           enable_overshoot);
+gboolean       gtk_scrolled_window_get_enable_overshoot (GtkScrolledWindow *scrolled_window);
 
 gint _gtk_scrolled_window_get_scrollbar_spacing (GtkScrolledWindow *scrolled_window);
 
