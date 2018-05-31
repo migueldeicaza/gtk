@@ -56,6 +56,7 @@ struct _GtkNSViewClass
 
 GType       gtk_ns_view_get_type (void) G_GNUC_CONST;
 GtkWidget * gtk_ns_view_new      (gpointer  nsview);
+gpointer    gtk_ns_view_get_nsview (GtkNSView *gtknsview);
 
 G_END_DECLS
 

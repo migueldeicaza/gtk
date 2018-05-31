@@ -907,5 +907,13 @@ gtk_ns_view_new (gpointer nsview)
                        NULL);
 }
 
+gpointer
+gtk_ns_view_get_nsview (GtkNSView *gtknsview)
+{
+  g_return_val_if_fail (GTK_IS_NS_VIEW (gtknsview), NULL);
+
+  return gtknsview->priv->view;
+}
+
 #define __GTK_NS_VIEW_C__
 #include "gtkaliasdef.c"
