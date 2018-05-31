@@ -280,6 +280,7 @@ clip_to_parent_viewports (GtkNSView *ns_view,
 
   ns_view = get_associated_gtknsview (self);
 
+  [self lockFocusIfCanDraw];
   if (ns_view)
     cg_context = clip_to_parent_viewports (ns_view, self);
 
@@ -287,6 +288,8 @@ clip_to_parent_viewports (GtkNSView *ns_view,
 
   if (cg_context)
     CGContextRestoreGState (cg_context);
+
+  [self unlockFocus];
 }
 @end
 
@@ -566,14 +569,16 @@ gtk_ns_view_unrealize (GtkWidget *widget)
   GTK_WIDGET_CLASS (gtk_ns_view_parent_class)->unrealize (widget);
 }
 
-static void
-gtk_ns_view_map (GtkWidget *widget)
-{
+static gboolean
+really_map (GtkWidget *widget) {
   GtkNSView *ns_view = GTK_NS_VIEW (widget);
   GtkWidget *toplevel = gtk_widget_get_toplevel (widget);
   GtkAllocation allocation;
   NSView *parent_view;
   NSWindow *window;
+
+  if (gtk_widget_get_mapped (widget))
+    return FALSE;
 
   gtk_widget_get_allocation (widget, &allocation);
   gtk_ns_view_position_view (ns_view, &allocation);
@@ -605,6 +610,14 @@ gtk_ns_view_map (GtkWidget *widget)
           gtk_ns_view_swizzle_draw_rect_recursive (text, "gtkwindow", toplevel);
         }
     }
+
+  return FALSE;
+}
+
+static void
+gtk_ns_view_map (GtkWidget *widget)
+{
+   g_timeout_add (50, (GSourceFunc)really_map, widget);
 }
 
 static void
