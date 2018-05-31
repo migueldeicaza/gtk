@@ -56,6 +56,7 @@
 #include "gdk.h"
 #include "gdkkeysyms.h"
 #include "gdkprivate-quartz.h"
+#include <Foundation/Foundation.h>
 
 #define NUM_KEYCODES 128
 #define KEYVALS_PER_KEYCODE 4
@@ -286,6 +287,12 @@ update_keymap (void)
   keyval_array = g_new0 (guint, NUM_KEYCODES * KEYVALS_PER_KEYCODE);
 
 #ifdef __LP64__
+  TISInputSourceRef new_ascii_layout = TISCopyCurrentASCIICapableKeyboardInputSource();
+  NSString *sourceId = TISGetInputSourceProperty(new_ascii_layout, kTISPropertyInputSourceID);
+  if ([sourceId hasPrefix:@"com.apple.keylayout"])
+    {
+      new_layout = new_ascii_layout;
+    }
   layout_data_ref = (CFDataRef) TISGetInputSourceProperty
     (new_layout, kTISPropertyUnicodeKeyLayoutData);
 
