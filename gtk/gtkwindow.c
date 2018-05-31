@@ -6631,13 +6631,28 @@ gtk_window_paint (GtkWidget     *widget,
 		      GTK_SHADOW_NONE, area, widget, "base", 0, 0, -1, -1);
 }
 
+static void
+gtk_window_paint_region (GtkWidget *widget,
+                         GdkRegion *region)
+{
+  int i, n_rectangles;
+  GdkRectangle *rectangles = NULL;
+
+  gdk_region_get_rectangles (region, &rectangles, &n_rectangles);
+
+  for (i = 0; i < n_rectangles; i++)
+    gtk_window_paint (widget, &rectangles[i]);
+
+  g_free (rectangles);
+}
+
 static gint
 gtk_window_expose (GtkWidget      *widget,
 		   GdkEventExpose *event)
 {
   if (!gtk_widget_get_app_paintable (widget))
-    gtk_window_paint (widget, &event->area);
-  
+    gtk_window_paint_region (widget, event->region);
+
   if (GTK_WIDGET_CLASS (gtk_window_parent_class)->expose_event)
     return GTK_WIDGET_CLASS (gtk_window_parent_class)->expose_event (widget, event);
 
