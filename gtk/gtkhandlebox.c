@@ -383,6 +383,8 @@ gtk_handle_box_unmap (GtkWidget *widget)
       gdk_window_hide (hb->float_window);
       hb->float_window_mapped = FALSE;
     }
+
+  GTK_WIDGET_CLASS (gtk_handle_box_parent_class)->unmap (widget);
 }
 
 static void
