@@ -85,6 +85,10 @@ gdk_quartz_ns_notification_callback (CFNotificationCenterRef  center,
                        CFSTR("AppleNoRedisplayAppearancePreferenceChanged"),
                        0) == kCFCompareEqualTo)
     new_event.setting.name = "gtk-primary-button-warps-slider";
+  else if (CFStringCompare (name,
+                            CFSTR("NSPreferredScrollerStyleDidChangeNotification"),
+                            0) == kCFCompareEqualTo)
+    new_event.setting.name = "gtk-enable-overlay-scrollbars";
 
   if (!new_event.setting.name)
     return;
@@ -114,6 +118,20 @@ gdk_quartz_events_init_notifications (void)
                                    CFSTR ("AppleNoRedisplayAppearancePreferenceChanged"),
                                    NULL,
                                    CFNotificationSuspensionBehaviorDeliverImmediately);
+
+  /* The preferred scroller notification and property are only available on Lion
+   * and higher. Also, beware that the notification will only start working after the
+   * property has been queried for the first time!.
+   */
+  if (gdk_quartz_osx_version () >= GDK_OSX_LION)
+    {
+      CFNotificationCenterAddObserver (CFNotificationCenterGetLocalCenter (),
+                                       NULL,
+                                       &gdk_quartz_ns_notification_callback,
+                                       CFSTR ("NSPreferredScrollerStyleDidChangeNotification"),
+                                       NULL,
+                                       CFNotificationSuspensionBehaviorDeliverImmediately);
+    }
 }
 
 void
@@ -1725,7 +1743,43 @@ gdk_screen_get_setting (GdkScreen   *screen,
 
       return TRUE;
     }
-  
+  else if (strcmp (name, "gtk-enable-overlay-scrollbars") == 0)
+    {
+      gboolean enabled = FALSE;
+
+      GDK_QUARTZ_ALLOC_POOL;
+
+      if (gdk_quartz_osx_version () >= GDK_OSX_LION)
+        {
+          /* Use an integer instead of NSScrollerStyle to allow things to be compiled
+           * on < 10.7 systems.
+           */
+          int setting = (int)[NSScroller preferredScrollerStyle];
+
+          if (setting == 1)
+            /* 1 == NSScrollerStyleOverlay */
+            enabled = TRUE;
+          else
+            enabled = FALSE;
+        }
+      else
+        {
+          /* On systems prior to Lion, default to legacy scrolling. */
+          enabled = FALSE;
+        }
+
+      g_value_set_boolean (value, enabled);
+
+      /* Initialize after quering the property for the first theme,
+       * notifications are otherwise not received!
+       */
+      gdk_quartz_events_init_notifications ();
+
+      GDK_QUARTZ_RELEASE_POOL;
+
+      return TRUE;
+    }
+
   /* FIXME: Add more settings */
 
   return FALSE;

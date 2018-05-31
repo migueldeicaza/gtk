@@ -139,7 +139,8 @@ enum {
   PROP_LABEL_SELECT_ON_FOCUS,
   PROP_COLOR_PALETTE,
   PROP_IM_PREEDIT_STYLE,
-  PROP_IM_STATUS_STYLE
+  PROP_IM_STATUS_STYLE,
+  PROP_ENABLE_OVERLAY_SCROLLBARS
 };
 
 /* --- prototypes --- */
@@ -1205,6 +1206,23 @@ gtk_settings_class_init (GtkSettingsClass *class)
                                                                 GTK_PARAM_READWRITE),
                                              gtk_rc_property_parse_enum);
   g_assert (result == PROP_IM_STATUS_STYLE);
+
+  /**
+   * GtkSettings:gtk-enable-overlay-scrollbars:
+   *
+   * Whether overlay scrollbars should be enabled.
+   *
+   * Since: Xamarin specific API.
+   */
+  result = settings_install_property_parser (class,
+                                             g_param_spec_boolean ("gtk-enable-overlay-scrollbars",
+                                                                   P_("Enable Overlay Scrollbars"),
+                                                                   P_("Whether to enable overlay scrollbars."),
+                                                                   FALSE,
+                                                                   GTK_PARAM_READWRITE),
+                                             NULL);
+
+  g_assert (result == PROP_ENABLE_OVERLAY_SCROLLBARS);
 }
 
 static void
