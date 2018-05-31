@@ -760,6 +760,8 @@ gtk_box_pack (GtkBox      *box,
   gtk_widget_child_notify (child, "pack-type");
   gtk_widget_child_notify (child, "position");
   gtk_widget_thaw_child_notify (child);
+
+  g_signal_emit_by_name (G_OBJECT (box), "add", child);
 }
 
 /**
@@ -1187,6 +1189,11 @@ gtk_box_add (GtkContainer *container,
 	     GtkWidget    *widget)
 {
   GtkBoxPrivate *private = GTK_BOX_GET_PRIVATE (container);
+
+  if (widget->parent == container) {
+    // Break the add signal cycle
+    return;
+  }
 
   gtk_box_pack_start (GTK_BOX (container), widget,
                       private->default_expand,
