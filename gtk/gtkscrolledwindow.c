@@ -270,6 +270,8 @@ static void      gtk_scrolled_window_get_scroll_areas  (GtkScrolledWindow *scrol
                                                         GdkRectangle      *hslider_rect);
 static void  gtk_scrolled_window_update_scrollbars (GtkScrolledWindow *scrolled_window);
 
+static void  gtk_scrolled_window_compute_viewport_allocation (GtkScrolledWindow *scrolled_window);
+
 static void gtk_scrolled_window_overlay_scrollbars_changed (GtkSettings *settings,
                                                             GParamSpec  *arg,
                                                             gpointer     user_data);
@@ -1390,6 +1392,8 @@ gtk_scrolled_window_update_scrollbars (GtkScrolledWindow *scrolled_window)
 
   if (!priv->overlay_scrollbars || !gtk_widget_get_realized (widget))
     return;
+
+  gtk_scrolled_window_compute_viewport_allocation (scrolled_window);
 
   window = gtk_widget_get_window (gtk_widget_get_toplevel (widget));
   window_height = gdk_window_get_height (window);
