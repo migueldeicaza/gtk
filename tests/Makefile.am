@@ -8,9 +8,7 @@ INCLUDES =				\
 	-DGDK_DISABLE_DEPRECATED	\
 	-DGTK_DISABLE_DEPRECATED	\
 	$(GTK_DEBUG_FLAGS)		\
-	$(GTK_DEP_CFLAGS)		\
-	-xobjective-c
-
+	$(GTK_DEP_CFLAGS)
 DEPS =									\
 	$(top_builddir)/gdk/$(gdktargetlib)				\
 	$(top_builddir)/gtk/$(gtktargetlib)
@@ -21,8 +19,17 @@ LDADD =								\
 	$(GTK_DEP_LIBS)							\
 	-lm
 
+if USE_QUARTZ
+INCLUDES = $(INCLUDES) \
+	-xobjective-c
+endif
+
 if USE_X11
 testsocket_programs = testsocket testsocket_child
+endif
+
+if USE_QUARTZ
+testquartz_programs = testnsview
 endif
 
 noinst_PROGRAMS =  $(TEST_PROGS)	\
@@ -58,11 +65,11 @@ noinst_PROGRAMS =  $(TEST_PROGS)	\
 	testmultiscreen			\
 	testnotebookdnd			\
 	testnouiprint			\
-	testnsview			\
 	testoffscreen			\
 	testoffscreenwindow		\
 	testorientable			\
 	testprint			\
+	$(testquartz_programs)		\
 	testrgb				\
 	testrecentchooser 		\
 	testrecentchoosermenu		\
