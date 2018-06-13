@@ -748,7 +748,11 @@ find_nsview_at_pos (GdkWindowImplQuartz *impl, gint x, gint y)
       if (r.origin.x <= x && r.origin.x + r.size.width >= x &&
           r.origin.y <= y && r.origin.y + r.size.height >= y)
         {
-          NSView* child = find_nsview_at_pos (impl, x - r.origin.x, y - r.origin.y);
+          NSView* child;
+          if (r.origin.x == 0 && r.origin.y == 0) {
+            return sv;
+          }
+          child = find_nsview_at_pos (impl, x - r.origin.x, y - r.origin.y);
           if (child != NULL)
             return child;
           else
