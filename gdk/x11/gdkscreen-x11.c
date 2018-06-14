@@ -516,6 +516,114 @@ gdk_screen_get_monitor_geometry (GdkScreen    *screen,
     *dest = screen_x11->monitors[monitor_num].geometry;
 }
 
+static int
+get_current_desktop (GdkScreen *screen)
+{
+  Display *display;
+  Window win;
+  Atom current_desktop, type;
+  int format;
+  unsigned long n_items, bytes_after;
+  unsigned char *data_return = NULL;
+  int workspace = 0;
+
+  display = GDK_DISPLAY_XDISPLAY (gdk_screen_get_display (screen));
+  win = XRootWindow (display, GDK_SCREEN_XNUMBER (screen));
+
+  current_desktop = XInternAtom (display, "_NET_CURRENT_DESKTOP", True);
+
+  XGetWindowProperty (display,
+                      win,
+                      current_desktop,
+                      0, G_MAXLONG,
+                      False, XA_CARDINAL,
+                      &type, &format, &n_items, &bytes_after,
+                      &data_return);
+
+  if (type == XA_CARDINAL && format == 32 && n_items > 0)
+    workspace = (int) data_return[0];
+
+  if (data_return)
+    XFree (data_return);
+
+  return workspace;
+}
+
+static void
+get_work_area (GdkScreen    *screen,
+               GdkRectangle *area)
+{
+  Atom            workarea;
+  Atom            type;
+  Window          win;
+  int             format;
+  gulong          num;
+  gulong          leftovers;
+  gulong          max_len = 4 * 32;
+  guchar         *ret_workarea;
+  long           *workareas;
+  int             result;
+  int             disp_screen;
+  int             desktop;
+  Display        *display;
+
+  display = GDK_DISPLAY_XDISPLAY (gdk_screen_get_display (screen));
+  disp_screen = GDK_SCREEN_XNUMBER (screen);
+  workarea = XInternAtom (display, "_NET_WORKAREA", True);
+
+  /* Defaults in case of error */
+  area->x = 0;
+  area->y = 0;
+  area->width = gdk_screen_get_width (screen);
+  area->height = gdk_screen_get_height (screen);
+
+  if (workarea == None)
+    return;
+
+  win = XRootWindow (display, disp_screen);
+  result = XGetWindowProperty (display,
+                               win,
+                               workarea,
+                               0,
+                               max_len,
+                               False,
+                               AnyPropertyType,
+                               &type,
+                               &format,
+                               &num,
+                               &leftovers,
+                               &ret_workarea);
+  if (result != Success ||
+      type == None ||
+      format == 0 ||
+      leftovers ||
+      num % 4 != 0)
+    return;
+
+  desktop = get_current_desktop (screen);
+
+  workareas = (long *) ret_workarea;
+  area->x = workareas[desktop * 4];
+  area->y = workareas[desktop * 4 + 1];
+  area->width = workareas[desktop * 4 + 2];
+  area->height = workareas[desktop * 4 + 3];
+
+  XFree (ret_workarea);
+}
+
+void
+gdk_screen_get_monitor_workarea (GdkScreen    *screen,
+                                     gint          monitor_num,
+                                     GdkRectangle *dest)
+{
+  GdkRectangle workarea;
+
+  gdk_screen_get_monitor_geometry (screen, monitor_num, dest);
+  get_work_area (screen, &workarea);
+  gdk_rectangle_intersect (&workarea, dest, dest);
+}
+
+
 /**
  * gdk_screen_get_rgba_colormap:
  * @screen: a #GdkScreen.
