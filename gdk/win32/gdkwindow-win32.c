@@ -59,6 +59,13 @@ struct _FullscreenInfo
   LONG  style;
 };
 
+typedef HRESULT(WINAPI *t_GetDpiForMonitor)(HMONITOR          monitor,
+                                            MONITOR_DPI_TYPE  dpi_type,
+                                            UINT             *dpi_x,
+                                            UINT             *dpi_y);
+
+static t_GetDpiForMonitor p_GetDpiForMonitor;
+
 static void     update_style_bits         (GdkWindow         *window);
 static gboolean _gdk_window_get_functions (GdkWindow         *window,
                                            GdkWMFunction     *functions);
@@ -314,6 +321,11 @@ _gdk_windowing_window_init (GdkScreen *screen)
   private->viewable = TRUE;
 
   gdk_win32_handle_table_insert ((HANDLE *) &draw_impl->handle, _gdk_root);
+
+  if (!p_GetDpiForMonitor)
+    {
+      ((p_GetDpiForMonitor = (t_GetDpiForMonitor)GetProcAddress(GetModuleHandleA("user32.dll"), "GetDpiForMonitorInternal")));
+    }
 
   GDK_NOTE (MISC, g_print ("_gdk_root=%p\n", GDK_WINDOW_HWND (_gdk_root)));
 }
@@ -4097,6 +4109,24 @@ _gdk_windowing_after_process_all_updates (void)
 {
 }
 
+static gdouble
+gdk_win32_window_get_scale_factor (GdkWindow *window)
+{
+  if (GDK_WINDOW_DESTROYED (window))
+    return 1.0;
+
+  if (p_GetDpiForMonitor != NULL)
+    {
+      guint dpi_x, dpi_y;
+      HMONITOR hmonitor = MonitorFromWindow (GDK_WINDOW_HWND (window), MONITOR_DEFAULTTONEAREST);
+      p_GetDpiForMonitor (hmonitor, MDT_EFFECTIVE_DPI, &dpi_x, &dpi_y);
+      return ((gdouble)dpi_x) / 96.0f;
+    }
+
+  return 1.0;
+}
+
+
 static void
 gdk_window_impl_iface_init (GdkWindowImplIface *iface)
 {
@@ -4129,6 +4159,7 @@ gdk_window_impl_iface_init (GdkWindowImplIface *iface)
   iface->input_window_crossing = _gdk_input_crossing_event;
   /* CHECK: we may not need set_pixmap anymore if setting FALSE */
   iface->supports_native_bg = TRUE;
+  iface->get_scale_factor = gdk_win32_window_get_scale_factor;
 }
 
 gboolean

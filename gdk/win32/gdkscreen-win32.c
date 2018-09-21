@@ -96,6 +96,17 @@ gdk_screen_get_monitor_height_mm (GdkScreen *screen,
   return _gdk_monitors[num_monitor].height_mm;
 }
 
+gdouble
+gdk_screen_get_monitor_scale_factor (GdkScreen *screen,
+				     gint       num_monitor)
+{
+  g_return_val_if_fail (GDK_IS_SCREEN (screen), 1.0);
+  g_return_val_if_fail (num_monitor < gdk_screen_get_n_monitors (screen), 1.0);
+  g_return_val_if_fail (num_monitor >= 0, 1.0);
+
+  return _gdk_monitors[num_monitor].scale_factor;
+}
+
 gchar *
 gdk_screen_get_monitor_plug_name (GdkScreen *screen,
                                   gint       num_monitor)

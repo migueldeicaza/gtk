@@ -30,6 +30,13 @@
 #undef HAVE_MONITOR_INFO
 #endif
 
+typedef HRESULT(WINAPI *t_GetDpiForMonitor)(HMONITOR          monitor,
+					    MONITOR_DPI_TYPE  dpi_type,
+					    UINT             *dpi_x,
+					    UINT             *dpi_y);
+
+static t_GetDpiForMonitor p_GetDpiForMonitor;
+
 void
 _gdk_windowing_set_default_display (GdkDisplay *display)
 {
@@ -103,6 +110,17 @@ enum_monitor (HMONITOR hmonitor,
   monitor->rect.width = monitor_info.rcMonitor.right - monitor_info.rcMonitor.left;
   monitor->rect.height = monitor_info.rcMonitor.bottom - monitor_info.rcMonitor.top;
 
+  if (p_GetDpiForMonitor != NULL)
+    {
+      guint dpi_x, dpi_y;
+      p_GetDpiForMonitor (hmonitor, MDT_EFFECTIVE_DPI, &dpi_x, &dpi_y);
+      monitor->scale_factor = ((gdouble)dpi_x) / 96.0f;
+    }
+  else
+    {
+      monitor->scale_factor = 1.0f;
+    }
+
   if (monitor_info.dwFlags & MONITORINFOF_PRIMARY &&
       *index != 0)
     {
@@ -127,6 +145,11 @@ _gdk_monitor_init (void)
   gint i, index;
 
   _gdk_num_monitors = 0;
+
+  if (!p_GetDpiForMonitor)
+    {
+      ((p_GetDpiForMonitor = (t_GetDpiForMonitor)GetProcAddress(GetModuleHandleA("user32.dll"), "GetDpiForMonitorInternal")));
+    }
 
   EnumDisplayMonitors (NULL, NULL, count_monitor, (LPARAM) &_gdk_num_monitors);
 
