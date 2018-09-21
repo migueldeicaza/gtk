@@ -830,6 +830,13 @@ gtk_tree_view_class_init (GtkTreeViewClass *class)
 							       GDK_TYPE_COLOR,
 							       GTK_PARAM_READABLE));
 
+  gtk_widget_class_install_style_property (widget_class,
+                                           g_param_spec_boxed ("grid-line-color",
+                                                               P_("Grid Line Color"),
+                                                               P_("Color to use for the grid line"),
+							       GDK_TYPE_COLOR,
+							       GTK_PARAM_READABLE));
+
   /**
    * GtkTreeView:row-ending-details:
    *
@@ -4250,13 +4257,23 @@ gtk_tree_view_draw_line (GtkTreeView         *tree_view,
                         2, 0.5);
       break;
     case GTK_TREE_VIEW_GRID_LINE:
-      cairo_set_source_rgb (cr, 0, 0, 0);
+    {
+      GdkColor *color = NULL;
+
+      gtk_widget_style_get (GTK_WIDGET(tree_view), "grid-line-color", &color, NULL);
+      if (color != NULL) {
+        gdk_cairo_set_source_color (cr, color);
+        gdk_color_free (color);
+      } else {
+        cairo_set_source_rgb (cr, 0, 0, 0);
+      }
       cairo_set_line_width (cr, tree_view->priv->grid_line_width);
       if (tree_view->priv->grid_line_dashes[0])
         cairo_set_dash (cr, 
                         tree_view->priv->grid_line_dashes,
                         2, 0.5);
       break;
+     }
     default:
       g_assert_not_reached ();
       /* fall through */

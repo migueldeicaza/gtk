@@ -1394,7 +1394,8 @@ move_resize_window_internal (GdkWindow *window,
   if ((x == -1 || (x == private->x)) &&
       (y == -1 || (y == private->y)) &&
       (width == -1 || (width == private->width)) &&
-      (height == -1 || (height == private->height)))
+      (height == -1 || (height == private->height)) &&
+      impl->toplevel)
     {
       return;
     }
@@ -1459,8 +1460,11 @@ move_resize_window_internal (GdkWindow *window,
       if (!private->input_only)
         {
           NSRect nsrect;
+          GdkWindow *toplevel = gdk_window_get_effective_toplevel (window);
+          gint x, y;
 
-          nsrect = NSMakeRect (private->x, private->y, private->width, private->height);
+          get_ancestor_coordinates_from_child (window, 0, 0, toplevel, &x, &y);
+          nsrect = NSMakeRect (x, y, private->width, private->height);
 
           /* The newly visible area of this window in a coordinate
            * system rooted at the origin of this window.
@@ -1746,6 +1750,13 @@ gdk_window_quartz_lower (GdkWindow *window)
           impl->sorted_children = g_list_append (impl->sorted_children, window);
         }
     }
+}
+
+static void
+gdk_window_quartz_restack_under (GdkWindow *window,
+                                 GList *native_siblings)
+{
+  /* Implement me ! */
 }
 
 static void
@@ -3017,6 +3028,7 @@ gdk_window_fullscreen (GdkWindow *window)
   GdkWindowObject *private = (GdkWindowObject *) window;
   GdkWindowImplQuartz *impl = GDK_WINDOW_IMPL_QUARTZ (private->impl);
   NSRect frame;
+  gint ox, oy;
 
   if (GDK_WINDOW_DESTROYED (window) ||
       !WINDOW_IS_TOPLEVEL (window))
@@ -3042,8 +3054,11 @@ gdk_window_fullscreen (GdkWindow *window)
       gdk_window_set_decorations (window, 0);
 
       frame = [[impl->toplevel screen] frame];
+       _gdk_quartz_window_xy_to_gdk_xy (frame.origin.x,
+                                        frame.origin.y + frame.size.height,
+                                        &ox, &oy);
       move_resize_window_internal (window,
-                                   0, 0, 
+                                   ox, oy,
                                    frame.size.width, frame.size.height);
       [impl->toplevel setContentSize:frame.size];
       [impl->toplevel makeKeyAndOrderFront:impl->toplevel];
@@ -3288,6 +3303,7 @@ gdk_window_impl_iface_init (GdkWindowImplIface *iface)
   iface->raise = gdk_window_quartz_raise;
   iface->lower = gdk_window_quartz_lower;
   iface->restack_toplevel = gdk_window_quartz_restack_toplevel;
+  iface->restack_under= gdk_window_quartz_restack_under;
   iface->move_resize = gdk_window_quartz_move_resize;
   iface->set_background = gdk_window_quartz_set_background;
   iface->set_back_pixmap = gdk_window_quartz_set_back_pixmap;

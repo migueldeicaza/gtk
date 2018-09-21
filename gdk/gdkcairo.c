@@ -213,7 +213,7 @@ gdk_cairo_set_source_pixbuf (cairo_t         *cr,
 
   window = cairo_get_user_data (cr, &gdk_cairo_drawable_pointer);
 
-  if (window &&
+  if (GDK_IS_WINDOW (window) &&
       (int) gdk_window_get_scale_factor (window) == 2)
     {
       GdkPixbuf *scaled_pixbuf;

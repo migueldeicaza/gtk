@@ -46,6 +46,7 @@ gdk_event_get_axis
 gdk_event_get_coords
 gdk_event_get_root_coords
 gdk_event_get_screen
+gdk_event_get_scroll_deltas
 gdk_event_get_state
 gdk_event_get_time
 gdk_event_get_type G_GNUC_CONST
@@ -55,6 +56,7 @@ gdk_event_peek
 gdk_event_put
 gdk_event_request_motions
 gdk_event_set_screen
+gdk_event_scroll_phase_get_type
 gdk_get_show_events
 gdk_set_show_events
 gdk_setting_get
@@ -707,6 +709,7 @@ gdk_window_get_geometry
 gdk_window_get_modal_hint
 gdk_window_get_origin
 gdk_window_get_root_coords
+gdk_window_get_scale_factor
 gdk_window_set_background
 gdk_window_set_back_pixmap
 gdk_window_set_cursor
@@ -782,6 +785,7 @@ gdk_window_get_display
 gdk_window_get_visual
 gdk_window_get_width
 gdk_window_get_height
+gdk_window_get_scale_factor
 #endif
 #endif
 
@@ -1115,10 +1119,12 @@ gdk_draw_rgb_image_dithalign
 gdk_screen_get_type G_GNUC_CONST
 gdk_screen_get_monitor_at_point
 gdk_screen_get_monitor_at_window
+gdk_screen_get_monitor_scale_factor
 gdk_screen_set_font_options
 gdk_screen_get_font_options
 gdk_screen_set_resolution
 gdk_screen_get_resolution
+gdk_screen_get_monitor_scale_factor
 #endif
 #endif
 
@@ -1173,6 +1179,7 @@ gdk_screen_get_monitor_workarea
 gdk_screen_get_monitor_width_mm
 gdk_screen_get_monitor_height_mm
 gdk_screen_get_monitor_plug_name
+gdk_screen_get_monitor_scale_factor
 gdk_screen_get_rgba_colormap
 gdk_screen_get_rgba_visual
 gdk_screen_get_active_window

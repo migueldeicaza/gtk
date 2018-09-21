@@ -888,7 +888,7 @@ gtk_icon_size_lookup_for_settings (GtkSettings *settings,
 {
   g_return_val_if_fail (GTK_IS_SETTINGS (settings), FALSE);
 
-  return icon_size_lookup_intern (settings, size, 1, width, height);
+  return icon_size_lookup_intern (settings, size, gdk_screen_get_monitor_scale_factor (gdk_screen_get_default (), 0), width, height);
 }
 
 /**

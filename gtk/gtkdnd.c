@@ -60,7 +60,7 @@ typedef struct _GtkDragSourceInfo GtkDragSourceInfo;
 typedef struct _GtkDragDestSite GtkDragDestSite;
 typedef struct _GtkDragDestInfo GtkDragDestInfo;
 typedef struct _GtkDragAnim GtkDragAnim;
-
+typedef struct _GtkDragFindData GtkDragFindData;
 
 typedef enum 
 {
@@ -176,6 +176,18 @@ typedef gboolean (* GtkDragDestCallback) (GtkWidget      *widget,
                                           gint            y,
                                           guint32         time);
 
+struct _GtkDragFindData
+{
+  gint x;
+  gint y;
+  GdkDragContext *context;
+  GtkDragDestInfo *info;
+  gboolean found;
+  gboolean toplevel;
+  GtkDragDestCallback callback;
+  guint32 time;
+};
+
 /* Enumeration for some targets we handle internally */
 
 enum {
@@ -214,13 +226,8 @@ static void     gtk_drag_selection_received     (GtkWidget        *widget,
 						 GtkSelectionData *selection_data,
 						 guint             time,
 						 gpointer          data);
-static gboolean gtk_drag_find_widget            (GtkWidget        *widget,
-                                                 GdkDragContext   *context,
-                                                 GtkDragDestInfo  *info,
-                                                 gint              x,
-                                                 gint              y,
-                                                 guint32           time,
-                                                 GtkDragDestCallback callback);
+static void     gtk_drag_find_widget            (GtkWidget        *widget,
+						 GtkDragFindData  *data);
 static void     gtk_drag_proxy_begin            (GtkWidget        *widget,
 						 GtkDragDestInfo  *dest_info,
 						 guint32           time);
@@ -1594,6 +1601,7 @@ _gtk_drag_dest_handle_event (GtkWidget *toplevel,
     case GDK_DRAG_MOTION:
     case GDK_DROP_START:
       {
+        GtkDragFindData data;
 	gint tx, ty;
         gboolean found;
 
@@ -1623,15 +1631,18 @@ _gtk_drag_dest_handle_event (GtkWidget *toplevel,
 #endif /* GDK_WINDOWING_X11 */
 	  gdk_window_get_position (toplevel->window, &tx, &ty);
 
-	found = gtk_drag_find_widget (toplevel,
-                                      context,
-                                      info,
-                                      event->dnd.x_root - tx,
-                                      event->dnd.y_root - ty,
-                                      event->dnd.time,
-                                      (event->type == GDK_DRAG_MOTION) ?
-                                      gtk_drag_dest_motion :
-                                      gtk_drag_dest_drop);
+        data.x = event->dnd.x_root - tx;
+        data.y = event->dnd.y_root - ty;
+        data.context = context;
+        data.info = info;
+        data.found = FALSE;
+        data.toplevel = TRUE;
+        data.callback = (event->type == GDK_DRAG_MOTION) ?
+          gtk_drag_dest_motion : gtk_drag_dest_drop;
+        data.time = event->dnd.time;
+
+        gtk_drag_find_widget (toplevel, &data);
+        found = data.found;
 
 	if (info->widget && !found)
 	  {
@@ -1819,99 +1830,148 @@ gtk_drag_selection_received (GtkWidget        *widget,
  *     DRAG_MOTION and DROP_START events.
  *************************************************************/
 
-static gboolean
-gtk_drag_find_widget (GtkWidget           *widget,
-                      GdkDragContext      *context,
-                      GtkDragDestInfo     *info,
-                      gint                 x,
-                      gint                 y,
-                      guint32              time,
-                      GtkDragDestCallback  callback)
+static void
+prepend_and_ref_widget (GtkWidget *widget,
+			gpointer   data)
 {
-  if (!gtk_widget_get_mapped (widget) ||
-      !gtk_widget_get_sensitive (widget))
-    return FALSE;
+  GSList **slist_p = data;
 
-  /* Get the widget at the pointer coordinates and travel up
-   * the widget hierarchy from there.
-   */
-  widget = _gtk_widget_find_at_coords (gtk_widget_get_window (widget),
-                                       x, y, &x, &y);
-  if (!widget)
-    return FALSE;
+  *slist_p = g_slist_prepend (*slist_p, g_object_ref (widget));
+}
 
-  while (widget)
+static void
+gtk_drag_find_widget (GtkWidget       *widget,
+		      GtkDragFindData *data)
+{
+  GtkAllocation new_allocation;
+  gint allocation_to_window_x = 0;
+  gint allocation_to_window_y = 0;
+  gint x_offset = 0;
+  gint y_offset = 0;
+
+  if (data->found || !gtk_widget_get_mapped (widget) || !gtk_widget_get_sensitive (widget))
+    return;
+
+  /* Note that in the following code, we only count the
+   * position as being inside a WINDOW widget if it is inside
+   * widget->window; points that are outside of widget->window
+   * but within the allocation are not counted. This is consistent
+   * with the way we highlight drag targets.
+   *
+   * data->x,y are relative to widget->parent->window (if
+   * widget is not a toplevel, widget->window otherwise).
+   * We compute the allocation of widget in the same coordinates,
+   * clipping to widget->window, and all intermediate
+   * windows. If data->x,y is inside that, then we translate
+   * our coordinates to be relative to widget->window and
+   * recurse.
+   */  
+  new_allocation = widget->allocation;
+
+  if (widget->parent)
     {
-      GtkWidget *parent;
-      GList *hierarchy = NULL;
-      gboolean found = FALSE;
+      gint tx, ty;
+      GdkWindow *window = widget->window;
 
-      if (!gtk_widget_get_mapped (widget) ||
-          !gtk_widget_get_sensitive (widget))
-        return FALSE;
-
-      /* need to reference the entire hierarchy temporarily in case the
-       * ::drag-motion/::drag-drop callbacks change the widget hierarchy.
+      /* Compute the offset from allocation-relative to
+       * window-relative coordinates.
        */
-      for (parent = widget;
-           parent;
-           parent = gtk_widget_get_parent (parent))
-        {
-          hierarchy = g_list_prepend (hierarchy, g_object_ref (parent));
-        }
+      allocation_to_window_x = widget->allocation.x;
+      allocation_to_window_y = widget->allocation.y;
 
-      /* If the current widget is registered as a drop site, check to
-       * emit "drag-motion" to check if we are actually in a drop
-       * site.
-       */
-      if (g_object_get_data (G_OBJECT (widget), "gtk-drag-dest"))
+      if (gtk_widget_get_has_window (widget))
 	{
-	  found = callback (widget, context, x, y, time);
-
-	  /* If so, send a "drag-leave" to the last widget */
-	  if (found)
-	    {
-	      if (info->widget && info->widget != widget)
-		{
-		  gtk_drag_dest_leave (info->widget, context, time);
-		}
-
-	      info->widget = widget;
-	    }
+	  /* The allocation is relative to the parent window for
+	   * window widgets, not to widget->window.
+	   */
+          gdk_window_get_position (window, &tx, &ty);
+	  
+          allocation_to_window_x -= tx;
+          allocation_to_window_y -= ty;
 	}
 
-      if (!found)
-        {
-          /* Get the parent before unreffing the hierarchy because
-           * invoking the callback might have destroyed the widget
-           */
-          parent = gtk_widget_get_parent (widget);
+      new_allocation.x = 0 + allocation_to_window_x;
+      new_allocation.y = 0 + allocation_to_window_y;
+      
+      while (window && window != widget->parent->window)
+	{
+	  GdkRectangle window_rect = { 0, 0, 0, 0 };
+	  
+	  window_rect.width = gdk_window_get_width (window);
+	  window_rect.height = gdk_window_get_height (window);
 
-          /* The parent might be going away when unreffing the
-           * hierarchy, so also protect againt that
-           */
-          if (parent)
-            g_object_add_weak_pointer (G_OBJECT (parent), (gpointer *) &parent);
-        }
+	  gdk_rectangle_intersect (&new_allocation, &window_rect, &new_allocation);
 
-      g_list_foreach (hierarchy, (GFunc) g_object_unref, NULL);
-      g_list_free (hierarchy);
+	  gdk_window_get_position (window, &tx, &ty);
+	  new_allocation.x += tx;
+	  x_offset += tx;
+	  new_allocation.y += ty;
+	  y_offset += ty;
+	  
+	  window = gdk_window_get_parent (window);
+	}
 
-      if (found)
-        return TRUE;
-
-      if (parent)
-        g_object_remove_weak_pointer (G_OBJECT (parent), (gpointer *) &parent);
-      else
-        return FALSE;
-
-      if (!gtk_widget_translate_coordinates (widget, parent, x, y, &x, &y))
-        return FALSE;
-
-      widget = parent;
+      if (!window)		/* Window and widget heirarchies didn't match. */
+	return;
     }
 
-  return FALSE;
+  if (data->toplevel ||
+      ((data->x >= new_allocation.x) && (data->y >= new_allocation.y) &&
+       (data->x < new_allocation.x + new_allocation.width) && 
+       (data->y < new_allocation.y + new_allocation.height)))
+    {
+      /* First, check if the drag is in a valid drop site in
+       * one of our children 
+       */
+      if (GTK_IS_CONTAINER (widget))
+	{
+	  GtkDragFindData new_data = *data;
+	  GSList *children = NULL;
+	  GSList *tmp_list;
+	  
+	  new_data.x -= x_offset;
+	  new_data.y -= y_offset;
+	  new_data.found = FALSE;
+	  new_data.toplevel = FALSE;
+	  
+	  /* need to reference children temporarily in case the
+	   * ::drag-motion/::drag-drop callbacks change the widget hierarchy.
+	   */
+	  gtk_container_forall (GTK_CONTAINER (widget), prepend_and_ref_widget, &children);
+	  for (tmp_list = children; tmp_list; tmp_list = tmp_list->next)
+	    {
+	      if (!new_data.found && gtk_widget_is_drawable (tmp_list->data))
+		gtk_drag_find_widget (tmp_list->data, &new_data);
+	      g_object_unref (tmp_list->data);
+	    }
+	  g_slist_free (children);
+	  
+	  data->found = new_data.found;
+	}
+
+      /* If not, and this widget is registered as a drop site, check to
+       * emit "drag-motion" to check if we are actually in
+       * a drop site.
+       */
+      if (!data->found &&
+	  g_object_get_data (G_OBJECT (widget), "gtk-drag-dest"))
+	{
+	  data->found = data->callback (widget,
+					data->context,
+					data->x - x_offset - allocation_to_window_x,
+					data->y - y_offset - allocation_to_window_y,
+					data->time);
+	  /* If so, send a "drag-leave" to the last widget */
+	  if (data->found)
+	    {
+	      if (data->info->widget && data->info->widget != widget)
+		{
+		  gtk_drag_dest_leave (data->info->widget, data->context, data->time);
+		}
+	      data->info->widget = widget;
+	    }
+	}
+    }
 }
 
 static void

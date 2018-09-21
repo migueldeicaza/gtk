@@ -1021,27 +1021,16 @@ gtk_im_context_ime_message_filter (GdkXEvent *xevent,
         CANDIDATEFORM cf;
 
         get_window_position (context_ime->client_window, &wx, &wy);
-        /* FIXME! */
-        {
-          HWND hwnd_top;
-          POINT pt;
-          RECT rc;
-
-          hwnd_top =
-            gdk_win32_window_get_impl_hwnd (gdk_window_get_toplevel
-                                            (context_ime->client_window));
-          GetWindowRect (hwnd_top, &rc);
-          pt.x = wx;
-          pt.y = wy;
-          ClientToScreen (hwnd_top, &pt);
-          wx = pt.x - rc.left;
-          wy = pt.y - rc.top;
-        }
         cf.dwIndex = 0;
-        cf.dwStyle = CFS_CANDIDATEPOS;
+        cf.dwStyle = CFS_EXCLUDE;
         cf.ptCurrentPos.x = wx + context_ime->cursor_location.x;
-        cf.ptCurrentPos.y = wy + context_ime->cursor_location.y
-          + context_ime->cursor_location.height;
+        cf.ptCurrentPos.y = wy + context_ime->cursor_location.y;
+        cf.rcArea.left = wx + context_ime->cursor_location.x;
+        cf.rcArea.right = wx + context_ime->cursor_location.x +
+          context_ime->cursor_location.width;
+        cf.rcArea.top = wy + context_ime->cursor_location.y;
+        cf.rcArea.bottom = wy + context_ime->cursor_location.y +
+          context_ime->cursor_location.height;
         ImmSetCandidateWindow (himc, &cf);
 
         if ((msg->lParam & GCS_COMPSTR))

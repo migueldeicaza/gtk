@@ -101,6 +101,22 @@
 #define CF_DIBV5 17
 #endif
 
+#ifndef MONITOR_DPI_TYPE
+typedef enum {
+  MDT_EFFECTIVE_DPI = 0,
+  MDT_ANGULAR_DPI   = 1,
+  MDT_RAW_DPI       = 2,
+  MDT_DEFAULT = MDT_EFFECTIVE_DPI
+} MONITOR_DPI_TYPE;
+#endif
+
+#ifndef PROCESS_DPI_AWARENESS
+typedef enum {
+  PROCESS_DPI_UNAWARE           = 0,
+  PROCESS_SYSTEM_DPI_AWARE      = 1,
+  PROCESS_PER_MONITOR_DPI_AWARE = 2
+} PROCESS_DPI_AWARENESS;
+#endif
 
 /* Define some combinations of GdkDebugFlags */
 #define GDK_DEBUG_EVENTS_OR_COLORMAP (GDK_DEBUG_EVENTS|GDK_DEBUG_COLORMAP)
@@ -386,6 +402,7 @@ struct _GdkWin32Monitor
   gchar *name;
   gint width_mm, height_mm;
   GdkRectangle rect;
+  gdouble scale_factor;
 };
 extern GdkWin32Monitor  *_gdk_monitors;
 

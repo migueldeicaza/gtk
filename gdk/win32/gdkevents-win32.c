@@ -1947,61 +1947,6 @@ ensure_stacking_on_unminimize (MSG *msg)
     }
 }
 
-static gboolean
-ensure_stacking_on_window_pos_changing (MSG       *msg,
-					GdkWindow *window)
-{
-  GdkWindowImplWin32 *impl = (GdkWindowImplWin32 *)((GdkWindowObject *) window)->impl;
-  WINDOWPOS *windowpos = (WINDOWPOS *) msg->lParam;
-
-  if (GetActiveWindow () == msg->hwnd &&
-      impl->type_hint != GDK_WINDOW_TYPE_HINT_UTILITY &&
-      impl->type_hint != GDK_WINDOW_TYPE_HINT_DIALOG &&
-      impl->transient_owner == NULL)
-    {
-      /* Make sure the window stays behind any transient-type windows
-       * of the same window group.
-       *
-       * If the window is not active and being activated, we let
-       * Windows bring it to the top and rely on the WM_ACTIVATEAPP
-       * handling to bring any utility windows on top of it.
-       */
-      HWND rover;
-      gboolean restacking;
-
-      rover = windowpos->hwndInsertAfter;
-      restacking = FALSE;
-      while (rover)
-	{
-	  GdkWindow *rover_gdkw = gdk_win32_handle_table_lookup (rover);
-
-	  /* Checking window group not implemented yet */
-	  if (rover_gdkw)
-	    {
-	      GdkWindowImplWin32 *rover_impl =
-		(GdkWindowImplWin32 *)((GdkWindowObject *)rover_gdkw)->impl;
-
-	      if (GDK_WINDOW_IS_MAPPED (rover_gdkw) &&
-		  (rover_impl->type_hint == GDK_WINDOW_TYPE_HINT_UTILITY ||
-		   rover_impl->type_hint == GDK_WINDOW_TYPE_HINT_DIALOG ||
-		   rover_impl->transient_owner != NULL))
-		{
-		  restacking = TRUE;
-		  windowpos->hwndInsertAfter = rover;
-		}
-	    }
-	  rover = GetNextWindow (rover, GW_HWNDNEXT);
-	}
-
-      if (restacking)
-	{
-	  GDK_NOTE (EVENTS, g_print (" restacking: %p", windowpos->hwndInsertAfter));
-	  return TRUE;
-	}
-    }
-  return FALSE;
-}
-
 static void
 ensure_stacking_on_activate_app (MSG       *msg,
 				 GdkWindow *window)
@@ -2041,7 +1986,10 @@ ensure_stacking_on_activate_app (MSG       *msg,
 	      if (GDK_WINDOW_IS_MAPPED (rover_gdkw) &&
 		  (rover_impl->type_hint == GDK_WINDOW_TYPE_HINT_UTILITY ||
 		   rover_impl->type_hint == GDK_WINDOW_TYPE_HINT_DIALOG ||
-		   rover_impl->transient_owner != NULL))
+		   rover_impl->transient_owner != NULL) &&
+		  /* Do not restack below a TEMP window, or it will move the
+		   * window to the TOPMOST group */
+		  GDK_WINDOW_TYPE (rover_gdkw) != GDK_WINDOW_TEMP)
 		{
 		  GDK_NOTE (EVENTS, g_print (" restacking: %p", rover));
 		  SetWindowPos (msg->hwnd, rover, 0, 0, 0, 0,
@@ -2888,7 +2836,19 @@ gdk_event_translate (MSG  *msg,
       if (_gdk_display->keyboard_grab.window != NULL &&
 	  !GDK_WINDOW_DESTROYED (_gdk_display->keyboard_grab.window))
 	{
-	  generate_grab_broken_event (_gdk_display->keyboard_grab.window, TRUE, NULL);
+	  GdkPointerGrabInfo *grab;
+
+          if (_gdk_display->keyboard_grab.window)
+	    _gdk_display_unset_has_keyboard_grab (_gdk_display, FALSE);
+
+	  grab = _gdk_display_get_last_pointer_grab (_gdk_display);
+	  if (grab)
+	    {
+	      grab->serial_end = 0;
+	      grab->implicit_ungrab = TRUE;
+	    }
+
+	  _gdk_display_pointer_grab_update (_gdk_display, 0);
 	}
 
       /* fallthrough */
@@ -2993,23 +2953,6 @@ gdk_event_translate (MSG  *msg,
 	  _modal_move_resize_window = NULL;
 	  _gdk_win32_end_modal_call ();
 	}
-      break;
-
-    case WM_WINDOWPOSCHANGING:
-      GDK_NOTE (EVENTS, (windowpos = (WINDOWPOS *) msg->lParam,
-			 g_print (" %s %s %dx%d@%+d%+d now below %p",
-				  _gdk_win32_window_pos_bits_to_string (windowpos->flags),
-				  (windowpos->hwndInsertAfter == HWND_BOTTOM ? "BOTTOM" :
-				   (windowpos->hwndInsertAfter == HWND_NOTOPMOST ? "NOTOPMOST" :
-				    (windowpos->hwndInsertAfter == HWND_TOP ? "TOP" :
-				     (windowpos->hwndInsertAfter == HWND_TOPMOST ? "TOPMOST" :
-				      (sprintf (buf, "%p", windowpos->hwndInsertAfter),
-				       buf))))),
-				  windowpos->cx, windowpos->cy, windowpos->x, windowpos->y,
-				  GetNextWindow (msg->hwnd, GW_HWNDPREV))));
-
-      if (GDK_WINDOW_IS_MAPPED (window))
-	return_val = ensure_stacking_on_window_pos_changing (msg, window);
       break;
 
     case WM_WINDOWPOSCHANGED:
@@ -3561,6 +3504,11 @@ gdk_event_translate (MSG  *msg,
 	  *ret_valp = 0;
 	  return_val = TRUE;
 	  break;
+	}
+
+      if (LOWORD (msg->wParam) == WA_INACTIVE)
+	{
+	  generate_grab_broken_event (_gdk_display->keyboard_grab.window, TRUE, NULL);
 	}
 
       /* Bring any tablet contexts to the top of the overlap order when

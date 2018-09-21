@@ -30,6 +30,15 @@
 #undef HAVE_MONITOR_INFO
 #endif
 
+typedef HRESULT(WINAPI *t_SetProcessDpiAwareness)(PROCESS_DPI_AWARENESS value);
+typedef HRESULT(WINAPI *t_GetDpiForMonitor)(HMONITOR          monitor,
+					    MONITOR_DPI_TYPE  dpi_type,
+					    UINT             *dpi_x,
+					    UINT             *dpi_y);
+
+static t_SetProcessDpiAwareness p_SetProcessDpiAwareness;
+static t_GetDpiForMonitor p_GetDpiForMonitor;
+
 void
 _gdk_windowing_set_default_display (GdkDisplay *display)
 {
@@ -103,6 +112,17 @@ enum_monitor (HMONITOR hmonitor,
   monitor->rect.width = monitor_info.rcMonitor.right - monitor_info.rcMonitor.left;
   monitor->rect.height = monitor_info.rcMonitor.bottom - monitor_info.rcMonitor.top;
 
+  if (p_GetDpiForMonitor != NULL)
+    {
+      guint dpi_x, dpi_y;
+      p_GetDpiForMonitor (hmonitor, MDT_EFFECTIVE_DPI, &dpi_x, &dpi_y);
+      monitor->scale_factor = ((gdouble)dpi_x) / 96.0f;
+    }
+  else
+    {
+      monitor->scale_factor = 1.0f;
+    }
+
   if (monitor_info.dwFlags & MONITORINFOF_PRIMARY &&
       *index != 0)
     {
@@ -127,6 +147,21 @@ _gdk_monitor_init (void)
   gint i, index;
 
   _gdk_num_monitors = 0;
+
+  if (!p_SetProcessDpiAwareness)
+    {
+      ((p_SetProcessDpiAwareness = (t_SetProcessDpiAwareness)GetProcAddress(GetModuleHandleA("user32.dll"), "SetProcessDpiAwarenessInternal")));
+    }
+
+  if (p_SetProcessDpiAwareness)
+    {
+      p_SetProcessDpiAwareness (PROCESS_SYSTEM_DPI_AWARE);
+    }
+
+  if (!p_GetDpiForMonitor)
+    {
+      ((p_GetDpiForMonitor = (t_GetDpiForMonitor)GetProcAddress(GetModuleHandleA("user32.dll"), "GetDpiForMonitorInternal")));
+    }
 
   EnumDisplayMonitors (NULL, NULL, count_monitor, (LPARAM) &_gdk_num_monitors);
 
@@ -178,6 +213,20 @@ _gdk_monitor_init (void)
 #endif
 }
 
+static void
+_gdk_screen_init_resolution (GdkScreen *screen)
+{
+  HDC hDC;
+
+  hDC = GetDC (NULL);
+
+  if (hDC)
+    {
+      gdk_screen_set_resolution (screen, GetDeviceCaps (hDC, LOGPIXELSY));
+      ReleaseDC (NULL, hDC);
+    }
+}
+
 GdkDisplay *
 gdk_display_open (const gchar *display_name)
 {
@@ -206,6 +255,7 @@ gdk_display_open (const gchar *display_name)
   _gdk_visual_init ();
   gdk_screen_set_default_colormap (_gdk_screen,
                                    gdk_screen_get_system_colormap (_gdk_screen));
+  _gdk_screen_init_resolution (_gdk_screen);
   _gdk_windowing_window_init (_gdk_screen);
   _gdk_windowing_image_init ();
   _gdk_events_init ();

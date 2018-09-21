@@ -1851,7 +1851,7 @@ gtk_image_expose (GtkWidget      *widget,
       GdkBitmap *mask;
       GdkPixbuf *pixbuf;
       gboolean needs_state_transform;
-      gdouble render_scale = 1.0;
+      gdouble render_scale = 1.0; // gtk_widget_get_scale_factor (widget);
 
       image = GTK_IMAGE (widget);
       misc = GTK_MISC (widget);
@@ -2108,10 +2108,10 @@ gtk_image_expose (GtkWidget      *widget,
                       gdk_cairo_region (cr, event->region);
                       cairo_clip (cr);
 
-                      cairo_scale (cr, 1.0 / render_scale, 1.0 / render_scale);
+                      cairo_scale (cr, render_scale, render_scale);
                       gdk_cairo_set_source_pixbuf (cr, pixbuf,
-                                                   image_bound.x * render_scale,
-                                                   image_bound.y * render_scale);
+                                                   image_bound.x / render_scale,
+                                                   image_bound.y / render_scale);
 
                       cairo_paint (cr);
                       cairo_destroy (cr);
@@ -2422,9 +2422,10 @@ gtk_image_update_size (GtkImage *image,
                        gint      image_height)
 {
   GtkWidget *widget = GTK_WIDGET (image);
+  gdouble scale = gtk_widget_get_scale_factor (widget);
 
-  widget->requisition.width = image_width + GTK_MISC (image)->xpad * 2;
-  widget->requisition.height = image_height + GTK_MISC (image)->ypad * 2;
+  widget->requisition.width = image_width * scale + GTK_MISC (image)->xpad * 2;
+  widget->requisition.height = image_height * scale + GTK_MISC (image)->ypad * 2;
 
   if (gtk_widget_get_visible (widget))
     gtk_widget_queue_resize (widget);

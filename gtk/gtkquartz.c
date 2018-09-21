@@ -283,7 +283,7 @@ _gtk_quartz_set_selection_data_for_pasteboard (NSPasteboard     *pasteboard,
           result = g_uri_list_extract_uris (list[0]);
 
           url = [NSURL URLWithString:[NSString stringWithUTF8String:result[0]]];
-          [url writeToPasteboard:pasteboard];
+          [pasteboard writeObjects: [NSArray arrayWithObject:url]];
 
           g_strfreev (result);
         }
