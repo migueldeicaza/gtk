@@ -110,6 +110,13 @@ typedef enum {
 } MONITOR_DPI_TYPE;
 #endif
 
+#ifndef PROCESS_DPI_AWARENESS
+typedef enum {
+  PROCESS_DPI_UNAWARE           = 0,
+  PROCESS_SYSTEM_DPI_AWARE      = 1,
+  PROCESS_PER_MONITOR_DPI_AWARE = 2
+} PROCESS_DPI_AWARENESS;
+#endif
 
 /* Define some combinations of GdkDebugFlags */
 #define GDK_DEBUG_EVENTS_OR_COLORMAP (GDK_DEBUG_EVENTS|GDK_DEBUG_COLORMAP)

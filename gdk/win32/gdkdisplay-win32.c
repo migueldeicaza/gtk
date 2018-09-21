@@ -30,11 +30,13 @@
 #undef HAVE_MONITOR_INFO
 #endif
 
+typedef HRESULT(WINAPI *t_SetProcessDpiAwareness)(PROCESS_DPI_AWARENESS value);
 typedef HRESULT(WINAPI *t_GetDpiForMonitor)(HMONITOR          monitor,
 					    MONITOR_DPI_TYPE  dpi_type,
 					    UINT             *dpi_x,
 					    UINT             *dpi_y);
 
+static t_SetProcessDpiAwareness p_SetProcessDpiAwareness;
 static t_GetDpiForMonitor p_GetDpiForMonitor;
 
 void
@@ -145,6 +147,16 @@ _gdk_monitor_init (void)
   gint i, index;
 
   _gdk_num_monitors = 0;
+
+  if (!p_SetProcessDpiAwareness)
+    {
+      ((p_SetProcessDpiAwareness = (t_SetProcessDpiAwareness)GetProcAddress(GetModuleHandleA("user32.dll"), "SetProcessDpiAwarenessInternal")));
+    }
+
+  if (p_SetProcessDpiAwareness)
+    {
+      p_SetProcessDpiAwareness (PROCESS_SYSTEM_DPI_AWARE);
+    }
 
   if (!p_GetDpiForMonitor)
     {
