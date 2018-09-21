@@ -1394,6 +1394,7 @@ gtk_entry_get_icon_gicon
 gtk_entry_get_icon_name
 gtk_entry_get_icon_pixbuf
 gtk_entry_get_icon_sensitive
+gtk_entry_get_icon_set
 gtk_entry_get_icon_stock
 gtk_entry_get_icon_storage_type
 gtk_entry_get_icon_tooltip_markup
@@ -1428,6 +1429,7 @@ gtk_entry_set_has_frame
 gtk_entry_set_icon_activatable
 gtk_entry_set_icon_drag_source
 gtk_entry_set_icon_from_gicon
+gtk_entry_set_icon_from_icon_set
 gtk_entry_set_icon_from_icon_name
 gtk_entry_set_icon_from_pixbuf
 gtk_entry_set_icon_from_stock
@@ -1937,6 +1939,7 @@ gtk_icon_size_from_name
 gtk_icon_size_get_name
 gtk_icon_size_lookup
 gtk_icon_size_lookup_for_settings
+gtk_icon_size_lookup_scaled
 gtk_icon_size_register
 gtk_icon_size_register_alias
 gtk_icon_set_add_source
@@ -1947,6 +1950,7 @@ gtk_icon_set_new
 gtk_icon_set_new_from_pixbuf
 gtk_icon_set_ref
 gtk_icon_set_render_icon
+gtk_icon_set_render_icon_scaled
 gtk_icon_set_unref
 gtk_icon_source_copy
 gtk_icon_source_free
@@ -1960,6 +1964,8 @@ gtk_icon_source_get_filename_utf8
 #endif
 gtk_icon_source_get_icon_name
 gtk_icon_source_get_pixbuf
+gtk_icon_source_get_scale
+gtk_icon_source_get_scale_wildcarded
 gtk_icon_source_get_size
 gtk_icon_source_get_size_wildcarded
 gtk_icon_source_get_state
@@ -1976,10 +1982,13 @@ gtk_icon_source_set_filename_utf8
 #endif
 gtk_icon_source_set_icon_name
 gtk_icon_source_set_pixbuf
+gtk_icon_source_set_scale
+gtk_icon_source_set_scale_wildcarded
 gtk_icon_source_set_size
 gtk_icon_source_set_size_wildcarded
 gtk_icon_source_set_state
 gtk_icon_source_set_state_wildcarded
+gtk_cairo_set_source_icon_set
 #endif
 #endif
 
@@ -2027,7 +2036,9 @@ gtk_icon_theme_list_icons
 gtk_icon_theme_load_icon
 gtk_icon_theme_lookup_icon
 gtk_icon_theme_lookup_by_gicon
+gtk_icon_theme_lookup_icon_for_scale
 gtk_icon_theme_choose_icon
+gtk_icon_theme_choose_icon_for_scale
 gtk_icon_theme_new
 #ifndef _WIN64
 gtk_icon_theme_prepend_search_path PRIVATE
@@ -5199,6 +5210,7 @@ gtk_widget_get_receives_default
 gtk_widget_get_root_window
 gtk_widget_get_requisition
 gtk_widget_get_screen
+gtk_widget_get_scale_factor
 gtk_widget_get_sensitive
 gtk_widget_get_settings
 gtk_widget_get_size_request
@@ -5265,6 +5277,7 @@ gtk_widget_region_intersect
 gtk_widget_remove_accelerator
 gtk_widget_remove_mnemonic_label
 gtk_widget_render_icon
+gtk_widget_render_icon_scaled
 gtk_widget_reparent
 gtk_widget_reset_rc_styles
 gtk_widget_reset_shapes

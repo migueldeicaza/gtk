@@ -783,6 +783,7 @@ gdk_window_get_display
 gdk_window_get_visual
 gdk_window_get_width
 gdk_window_get_height
+gdk_window_get_scale_factor
 #endif
 #endif
 
@@ -1175,6 +1176,7 @@ gdk_screen_get_monitor_workarea
 gdk_screen_get_monitor_width_mm
 gdk_screen_get_monitor_height_mm
 gdk_screen_get_monitor_plug_name
+gdk_screen_get_monitor_scale_factor
 gdk_screen_get_rgba_colormap
 gdk_screen_get_rgba_visual
 gdk_screen_get_active_window
