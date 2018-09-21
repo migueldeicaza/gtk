@@ -108,6 +108,14 @@ gdk_screen_get_monitor_plug_name (GdkScreen *screen,
 }
 
 void
+gdk_screen_get_monitor_workarea (GdkScreen    *screen, 
+				 gint          num_monitor,
+				 GdkRectangle *dest)
+{
+  return gdk_screen_get_monitor_geometry (screen, num_monitor, dest);
+}
+
+void
 gdk_screen_get_monitor_geometry (GdkScreen    *screen, 
 				 gint          num_monitor,
 				 GdkRectangle *dest)
@@ -181,4 +189,13 @@ gdk_screen_is_composited (GdkScreen *screen)
   g_return_val_if_fail (GDK_IS_SCREEN (screen), FALSE);
 
   return FALSE;
+}
+
+gdouble
+gdk_screen_get_monitor_scale_factor (GdkScreen *screen,
+                                     gint       monitor_num)
+{
+  g_return_val_if_fail (GDK_IS_SCREEN (screen), 1);
+
+  return 1;
 }
