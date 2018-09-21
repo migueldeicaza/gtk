@@ -1820,24 +1820,18 @@ draw_box (GtkStyle *style,
 
       border = (GTK_TOGGLE_BUTTON (widget)->active ? DFCS_PUSHED | DFCS_FLAT : 0);
 
-      dc = get_window_dc (style, window, state_type, &dc_info, x, y, width, height, &rect);
-      DrawFrameControl (dc, &rect, DFC_SCROLL, DFCS_SCROLLDOWN | border);
-      release_window_dc (&dc_info);
-
-      if (xp_theme_is_active ()
-	  && xp_theme_draw (window, XP_THEME_ELEMENT_COMBOBUTTON, style, x, y,
-			    width, height, state_type, area))
-	{
       cx = GetSystemMetrics(SM_CXVSCROLL);
       x += width - cx;
       width = cx;
 
+      dc = get_window_dc (style, window, state_type, &dc_info, x, y, width, height, &rect);
+      DrawFrameControl (dc, &rect, DFC_SCROLL, DFCS_SCROLLCOMBOBOX | border);
+      release_window_dc (&dc_info);
 
       dc = get_window_dc (style, window, state_type, &dc_info, x, y, width - cx, height, &rect);
       FillRect (dc, &rect, GetSysColorBrush (COLOR_WINDOW));
       release_window_dc (&dc_info);
       return;
-	}
     }
 
   if (DETAIL("button") || DETAIL("buttondefault"))
