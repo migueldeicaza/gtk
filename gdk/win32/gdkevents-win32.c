@@ -2836,7 +2836,19 @@ gdk_event_translate (MSG  *msg,
       if (_gdk_display->keyboard_grab.window != NULL &&
 	  !GDK_WINDOW_DESTROYED (_gdk_display->keyboard_grab.window))
 	{
-	  generate_grab_broken_event (_gdk_display->keyboard_grab.window, TRUE, NULL);
+	  GdkPointerGrabInfo *grab;
+
+          if (_gdk_display->keyboard_grab.window)
+	    _gdk_display_unset_has_keyboard_grab (_gdk_display, FALSE);
+
+	  grab = _gdk_display_get_last_pointer_grab (_gdk_display);
+	  if (grab)
+	    {
+	      grab->serial_end = 0;
+	      grab->implicit_ungrab = TRUE;
+	    }
+
+	  _gdk_display_pointer_grab_update (_gdk_display, 0);
 	}
 
       /* fallthrough */
@@ -3492,6 +3504,11 @@ gdk_event_translate (MSG  *msg,
 	  *ret_valp = 0;
 	  return_val = TRUE;
 	  break;
+	}
+
+      if (LOWORD (msg->wParam) == WA_INACTIVE)
+	{
+	  generate_grab_broken_event (_gdk_display->keyboard_grab.window, TRUE, NULL);
 	}
 
       /* Bring any tablet contexts to the top of the overlap order when
