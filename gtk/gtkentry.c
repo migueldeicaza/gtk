@@ -2373,7 +2373,7 @@ get_icon_width (GtkEntry             *entry,
   gtk_icon_size_lookup_for_settings (settings, GTK_ICON_SIZE_MENU,
                                      &menu_icon_width, NULL);
 
-  return MAX (gdk_pixbuf_get_width (icon_info->pixbuf) /
+  return MAX (gdk_pixbuf_get_width (icon_info->pixbuf) *
               gtk_widget_get_scale_factor (GTK_WIDGET (entry)),
               menu_icon_width);
 }
@@ -3250,8 +3250,8 @@ draw_icon (GtkWidget            *widget,
     return;
 
   window_scale = gdk_window_get_scale_factor (widget->window);
-  width = gdk_window_get_width (icon_info->window) / window_scale;
-  height = gdk_window_get_height (icon_info->window) / window_scale;
+  width = gdk_window_get_width (icon_info->window);
+  height = gdk_window_get_height (icon_info->window);
 
   /* size_allocate hasn't been called yet. These are the default values.
    */
@@ -3300,7 +3300,8 @@ draw_icon (GtkWidget            *widget,
     }
 
   cr = gdk_cairo_create (icon_info->window);
-  gdk_cairo_set_source_pixbuf (cr, pixbuf, x, y);
+  cairo_scale (cr, window_scale, window_scale);
+  gdk_cairo_set_source_pixbuf (cr, pixbuf, x / window_scale, y / window_scale);
   cairo_paint (cr);
   cairo_destroy (cr);
 
@@ -6695,7 +6696,7 @@ gtk_entry_ensure_pixbuf (GtkEntry             *entry,
       g_assert_not_reached ();
       break;
     }
-    
+
   if (icon_info->pixbuf != NULL && icon_info->window != NULL)
     gdk_window_show_unraised (icon_info->window);
 }
